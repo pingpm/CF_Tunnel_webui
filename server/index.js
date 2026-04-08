@@ -51,7 +51,10 @@ function startTunnel(localPort, id = null) {
         }
 
         // cloudflared tunnel --url http://localhost:PORT
-        const tunnelProcess = spawn(absoluteBin, ['tunnel', '--url', `http://localhost:${localPort}`]);
+        // Use shell: true on Windows to prevent 'spawn UNKNOWN' errors
+        const tunnelProcess = spawn(absoluteBin, ['tunnel', '--url', `http://localhost:${localPort}`], {
+            shell: process.platform === 'win32'
+        });
         
         let urlDetected = false;
         let url = '';

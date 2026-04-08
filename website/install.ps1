@@ -75,11 +75,12 @@ if (!(Check-Node)) {
         $innerFolder = Get-ChildItem -Path "$env:TEMP\node_temp" -Directory | Select-Object -First 1
         Move-Item -Path "$($innerFolder.FullName)\*" -Destination "$PWD" -Force
         
-        # Map the executable and ADD TO PATH for sub-processes (like npm scripts)
         if (Test-Path "$PWD\node.exe") {
             $script:nodeExe = "$PWD\node.exe"
             $env:PATH = "$PWD;" + $env:PATH
-            Write-Host "✅ Portable Node.js ready and injected into session PATH!" -ForegroundColor Green
+            # Unblock all files to prevent Windows SmartScreen blocks
+            Get-ChildItem -Path "$PWD" -Recurse | Unblock-File -ErrorAction SilentlyContinue
+            Write-Host "✅ Portable Node.js ready and files unblocked!" -ForegroundColor Green
         }
         
         Remove-Item $nodeZipFile

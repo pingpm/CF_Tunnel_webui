@@ -45,24 +45,38 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
 # 1. Check for Node.js
 if (!(Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Node.js is not installed." -ForegroundColor Red
-    Write-Host "💡 Attempting to install Node.js via winget..." -ForegroundColor Yellow
     
     if (Get-Command winget -ErrorAction SilentlyContinue) {
+        Write-Host "💡 Attempting to install Node.js via winget..." -ForegroundColor Yellow
         Write-Host "📥 Downloading and installing Node.js LTS..." -ForegroundColor Cyan
         winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
-        
-        Write-Host "✅ Node.js installation started." -ForegroundColor Green
-        Write-Host "🔄 Restarting PowerShell to apply environment changes..." -ForegroundColor Yellow
-        
-        # Launch a new PowerShell that continues the same command and then exit this one
-        $currentCommand = "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
-        Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "& { $currentCommand }"
-        exit
     } else {
-        Write-Host "Please install Node.js manually from https://nodejs.org/" -ForegroundColor Yellow
-        Read-Host "Press Enter to exit..."
-        exit
+        # Fallback: Manual MSI Download & Install
+        Write-Host "⚠️  winget not found. Attempting direct MSI installation..." -ForegroundColor Yellow
+        $msiPath = "$env:TEMP\node-v20.msi"
+        $msiUrl = "https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi" # Static version to ensure stability
+        
+        try {
+            Write-Host "📥 Downloading Node.js MSI from nodejs.org..." -ForegroundColor Cyan
+            (New-Object Net.WebClient).DownloadFile($msiUrl, $msiPath)
+            Write-Host "📦 Performing silent installation (this may take a minute)..." -ForegroundColor Yellow
+            Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /quiet /qn /norestart" -Wait
+            Remove-Item $msiPath
+        } catch {
+            Write-Host "❌ Failed to download or install Node.js." -ForegroundColor Red
+            Write-Host "Please install Node.js manually from https://nodejs.org/" -ForegroundColor Yellow
+            Read-Host "Press Enter to exit..."
+            exit
+        }
     }
+    
+    Write-Host "✅ Node.js installation completed." -ForegroundColor Green
+    Write-Host "🔄 Restarting PowerShell to apply environment changes..." -ForegroundColor Yellow
+    
+    # Launch a new PowerShell that continues the same command and then exit this one
+    $currentCommand = "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
+    Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "& { $currentCommand }"
+    exit
 }
 
 Write-Host "✅ Node.js detected: $(node -v)" -ForegroundColor Green

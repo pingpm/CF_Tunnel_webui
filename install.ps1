@@ -1,36 +1,39 @@
-# Set encoding to UTF-8 to support emojis and international characters
+# Try to fix encoding for emojis
+$OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $Host.UI.RawUI.WindowTitle = "CF_Tunnel Installer"
 
 Write-Host "`n🚀 Starting CF_Tunnel Installation...`n" -ForegroundColor Cyan
 
 # 0. Remote execution handler
-# If package.json is missing, we need to get the code first
-if (!(Test-Path "package.json")) {
+if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
     Write-Host "📥 Project files not found. Preparing to fetch code..." -ForegroundColor Yellow
     
     $REPO_URL = "https://github.com/pingpm/CF_Tunnel_webui"
-    $DIR_NAME = "CF_Tunnel-main"
 
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        # Method 1: Git Clone
         Write-Host "📥 Cloning repository via Git..." -ForegroundColor Cyan
         git clone "$REPO_URL.git" "CF_Tunnel-temp"
-        if ($LASTEXITCODE -eq 0) {
-            Set-Location -Path "CF_Tunnel-temp"
-        }
+        if (Test-Path "CF_Tunnel-temp") { Set-Location -Path "CF_Tunnel-temp" }
     } else {
-        # Method 2: Direct ZIP Download (Fallback for systems without Git)
         Write-Host "⚠️  Git not detected. Downloading ZIP archive instead..." -ForegroundColor Yellow
         $zipFile = "$env:TEMP\cft_latest.zip"
-        $destFolder = "$PWD\CF_Tunnel-main"
         
         try {
             Invoke-WebRequest -Uri "$REPO_URL/archive/refs/heads/main.zip" -OutFile $zipFile
             Write-Host "📦 Extracting files..." -ForegroundColor Cyan
             Expand-Archive -Path $zipFile -DestinationPath "$PWD" -Force
             Remove-Item $zipFile
-            Set-Location -Path $destFolder
+            
+            # Dynamically find the extracted folder (GitHub ZIPs are usually RepoName-BranchName)
+            $extractedFolder = Get-ChildItem -Directory | Where-Object { $_.Name -like "*CF_Tunnel_webui-main*" } | Select-Object -First 1
+            if ($extractedFolder) {
+                Set-Location -Path $extractedFolder.FullName
+            } else {
+                Write-Host "❌ Could not find the extracted folder." -ForegroundColor Red
+                exit
+            }
         } catch {
             Write-Host "❌ Failed to download or extract the project." -ForegroundColor Red
             Read-Host "Press Enter to exit..."
@@ -42,10 +45,18 @@ if (!(Test-Path "package.json")) {
 # 1. Check for Node.js
 if (!(Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "❌ Node.js is not installed." -ForegroundColor Red
-    Write-Host "Please install Node.js from https://nodejs.org/" -ForegroundColor Yellow
-    Write-Host "After installation, please restart your terminal and run this script again." -ForegroundColor Gray
-    Read-Host "Press Enter to exit..."
-    exit
+    Write-Host "💡 Attempting to install Node.js via winget..." -ForegroundColor Yellow
+    
+    if (Get-Command winget -ErrorAction SilentlyContinue) {
+        winget install OpenJS.NodeJS.LTS
+        Write-Host "✅ Node.js installation triggered. Please RESTART YOUR TERMINAL after it finishes." -ForegroundColor Green
+        Read-Host "Press Enter to exit..."
+        exit
+    } else {
+        Write-Host "Please install Node.js manually from https://nodejs.org/" -ForegroundColor Yellow
+        Read-Host "Press Enter to exit..."
+        exit
+    }
 }
 
 Write-Host "✅ Node.js detected: $(node -v)" -ForegroundColor Green

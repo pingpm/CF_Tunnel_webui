@@ -199,6 +199,31 @@
 
         #toast.show { transform: translateX(-50%) translateY(0); }
 
+        .manual-step {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.2s;
+        }
+        .manual-step:hover { transform: translateY(-2px); border-color: var(--primary); }
+        .step-num {
+            background: var(--primary);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
         footer { text-align: center; padding: 4rem 2rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem; }
 
         @media (max-width: 768px) {
@@ -246,6 +271,28 @@
                 <button class="copy-btn" id="copy-btn" title="点击复制">
                     <i data-lucide="copy" style="width: 20px;"></i>
                 </button>
+            </div>
+            
+            <div style="margin-top: 3rem; text-align: center;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--text);">无法一键安装？尝试手动部署</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; text-align: left; max-width: 900px; margin: 0 auto;">
+                    <div class="manual-step">
+                        <span class="step-num">1</span>
+                        <p>安装 <a href="https://nodejs.org/" target="_blank" style="color:var(--primary)">Node.js</a> 环境</p>
+                    </div>
+                    <div class="manual-step">
+                        <span class="step-num">2</span>
+                        <p>下载项目 <a href="https://github.com/pingpm/CF_Tunnel_webui/archive/refs/heads/main.zip" style="color:var(--primary)">ZIP</a> 并解压</p>
+                    </div>
+                    <div class="manual-step">
+                        <span class="step-num">3</span>
+                        <p>命令行运行 <code style="background:var(--card-bg); padding:2px 4px; border-radius:4px;">npm install</code></p>
+                    </div>
+                    <div class="manual-step">
+                        <span class="step-num">4</span>
+                        <p>运行 <code style="background:var(--card-bg); padding:2px 4px; border-radius:4px;">node server/index.js</code></p>
+                    </div>
+                </div>
             </div>
         </section>
 

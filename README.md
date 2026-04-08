@@ -21,17 +21,31 @@ A lightweight, automated management dashboard for Cloudflare Tunnels. Easily exp
 
 ## 🛠️ Installation
 
-### Linux / macOS
-Open your terminal and run:
-```bash
-curl -sSL https://cft.imdaxia.com/install.sh | bash
+### Windows (PowerShell)
+Open PowerShell and run:
+```powershell
+iwr -useb https://cft.imdaxia.com/install.ps1 | iex
 ```
 
-### Windows (PowerShell)
-Download the repository and run:
-```powershell
-.\install.ps1
-```
+## 🛠️ Manual Installation (Fallback)
+If the one-line command fails, please follow these steps:
+
+1. **Install Node.js**: Download and install from [nodejs.org](https://nodejs.org/) (LTS version is recommended).
+2. **Download Project**:
+   ```bash
+   git clone https://github.com/pingpm/CF_Tunnel_webui.git
+   cd CF_Tunnel_webui
+   ```
+   *(Or download and extract the project [ZIP](https://github.com/pingpm/CF_Tunnel_webui/archive/refs/heads/main.zip))*
+3. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+4. **Start Server**:
+   ```bash
+   node server/index.js
+   ```
+5. **Open Dashboard**: Go to `http://localhost:11122` in your browser.
 
 ---
 

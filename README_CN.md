@@ -19,17 +19,31 @@
 
 ## 🛠️ 安装步骤
 
-### Linux / macOS
-打开终端并运行：
-```bash
-curl -sSL https://cft.imdaxia.com/install.sh | bash
+### Windows (PowerShell)
+打开 PowerShell 并运行：
+```powershell
+iwr -useb https://cft.imdaxia.com/install.ps1 | iex
 ```
 
-### Windows (PowerShell)
-下载仓库后在 PowerShell 中运行：
-```powershell
-.\install.ps1
-```
+## 🛠️ 手动安装 (当一键安装脚本失败时)
+如果由于网络或环境原因导致一键脚本失败，请按照以下步骤手动部署：
+
+1. **安装 Node.js**：前往 [nodejs.org](https://nodejs.org/) 下载并安装 LTS 版本。
+2. **下载本项目**：
+   ```bash
+   git clone https://github.com/pingpm/CF_Tunnel_webui.git
+   cd CF_Tunnel_webui
+   ```
+   *(或直接下载并解压 [项目 ZIP 包](https://github.com/pingpm/CF_Tunnel_webui/archive/refs/heads/main.zip))*
+3. **安装依赖**：
+   ```bash
+   npm install
+   ```
+4. **启动服务**：
+   ```bash
+   node server/index.js
+   ```
+5. **访问面板**：在浏览器打开 `http://localhost:11122`。
 
 ---
 

@@ -1,0 +1,7 @@
+node_modules/
+data.json
+.DS_Store
+package-lock.json
+*.log
+bin/
+# Optional: if cloudflared is downloaded to node_modules/cloudflared/bin, it is already ignored.

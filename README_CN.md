@@ -1,0 +1,48 @@
+# 🚀 CF_Tunnel_webui
+
+一个轻量化、全自动的 Cloudflare Tunnel 管理面板。无需公网 IP，无需配置防火墙端口转发，即可轻松将本地服务（Web、SSH、API 等）发布到公网。
+
+![Web UI 预览](https://img.shields.io/badge/UI-专业简约-blue?style=for-the-badge)
+![平台支持](https://img.shields.io/badge/平台-Windows%20|%20Linux%20|%20macOS-success?style=for-the-badge)
+![开源协议](https://img.shields.io/badge/协议-MIT-orange?style=for-the-badge)
+
+## ✨ 功能亮点
+
+- **一键安装**：为 Windows 和 Linux 提供全自动安装脚本。
+- **智能依赖管理**：自动检测并安装 Node.js、npm 以及适配您系统的最新版 `cloudflared` 二进制文件。
+- **现代化面板**：高颜值的专业极简设计，支持深色/浅色模式自适应。
+- **动态端口映射**：直接在浏览器中添加、删除或监控端口映射。
+- **双语支持**：完整的中英文界面切换支持。
+- **零配置**：利用 Cloudflare Quick Tunnels (TryCloudflare) 技术，即开即用。
+
+---
+
+## 🛠️ 安装步骤
+
+### Linux / macOS
+打开终端并运行：
+```bash
+git clone https://github.com/pingpm/CF_Tunnel_webui.git
+cd CF_Tunnel_webui
+chmod +x install.sh
+./install.sh
+```
+
+### Windows (PowerShell)
+下载仓库后在 PowerShell 中运行：
+```powershell
+.\install.ps1
+```
+
+---
+
+## 📖 如何使用
+
+1.  **启动**：运行安装脚本。
+2.  **获取访问面板**：查看终端输出的 **Access Link**。
+3.  **创建穿透**：在浏览器打开链接，输入本地端口并点击 **Create Tunnel**。
+
+### 一键安装命令 (Curl-to-Install)
+```bash
+curl -sSL https://raw.githubusercontent.com/pingpm/CF_Tunnel_webui/main/install.sh | bash
+```

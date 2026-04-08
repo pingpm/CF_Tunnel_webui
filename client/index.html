@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CF Tunnel Hub - 穿透管理面板</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --primary-color: #f48120; /* Cloudflare Orange */
+            --primary-hover: #e67700;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --accent-bg: #fff7ed;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --surface-color: #1e293b;
+                --text-main: #f1f5f9;
+                --text-muted: #94a3b8;
+                --border-color: #334155;
+                --accent-bg: #2d1f14;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--accent-bg);
+            border-radius: 99px;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface-color);
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-panel {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 2.5rem;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 0.75rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-main);
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(244, 129, 32, 0.1);
+        }
+
+        button {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            padding: 0.5rem;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(0,0,0,0.05);
+            color: var(--danger);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .btn-ghost:hover { background: rgba(255,255,255,0.05); }
+        }
+
+        .tunnel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .tunnel-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.1s;
+        }
+
+        .tunnel-card:hover { border-color: var(--primary-color); }
+
+        .tunnel-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .tunnel-name {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tunnel-url {
+            font-size: 0.8125rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        .tunnel-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .pill {
+            font-size: 0.7rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .pill-running { background: #dcfce7; color: #166534; }
+        .pill-starting { background: #fef9c3; color: #854d0e; }
+        .pill-stopped { background: #fee2e2; color: #991b1b; }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: var(--surface-color);
+            border: 1px dashed var(--border-color);
+            border-radius: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .loader {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid currentColor;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotate 0.8s linear infinite;
+        }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        @media (max-width: 640px) {
+            .input-group { grid-template-columns: 1fr; }
+            .tunnel-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .tunnel-actions { width: 100%; justify-content: flex-end; display: flex; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i data-lucide="cloud-lightning"></i>
+                CF Tunnel Manager
+            </div>
+            <div class="status-badge">
+                <i data-lucide="shield-check" style="width: 14px;"></i>
+                <span>系统监控中 System Active</span>
+            </div>
+        </header>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">管理面板地址 / Panel URL</div>
+                <div class="stat-value" id="admin-url">正在连接...</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">正在运行 / Active</div>
+                <div class="stat-value" id="active-count">0</div>
+            </div>
+        </div>
+
+        <h2 class="section-title"><i data-lucide="plus-square" style="width:18px"></i> 新建映射 / Add New</h2>
+        <div class="form-panel">
+            <div class="input-group">
+                <input type="text" id="tunnel-name" placeholder="名称 (如：我的站点)">
+                <input type="number" id="local-port" placeholder="本地端口 (如：3000)">
+                <button class="btn-primary" id="add-btn">
+                    <span id="btn-text">创建隧道 Create</span>
+                    <div id="btn-loader" class="loader" style="display: none;"></div>
+                </button>
+            </div>
+        </div>
+
+        <h2 class="section-title"><i data-lucide="list" style="width:18px"></i> 隧道列表 / Tunnels</h2>
+        <div id="tunnel-list" class="tunnel-list">
+            <div class="empty-state">
+                <i data-lucide="info" style="margin-bottom: 0.5rem;"></i>
+                <p>暂无活动隧道，请在上方添加。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const tunnelListEl = document.getElementById('tunnel-list');
+        const adminUrlEl = document.getElementById('admin-url');
+        const activeCountEl = document.getElementById('active-count');
+        const addBtn = document.getElementById('add-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnLoader = document.getElementById('btn-loader');
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const cleanUrl = data.adminUrl.replace('https://', '');
+                adminUrlEl.textContent = cleanUrl;
+                adminUrlEl.onclick = () => window.open(data.adminUrl, '_blank');
+                adminUrlEl.style.cursor = 'pointer';
+                adminUrlEl.title = "点击在新窗口打开";
+            } catch (e) {
+                adminUrlEl.textContent = "连接失败 Error";
+            }
+        }
+
+        async function fetchTunnels() {
+            try {
+                const res = await fetch('/api/tunnels');
+                const tunnels = await res.json();
+                
+                activeCountEl.textContent = tunnels.filter(t => t.status === 'running').length;
+
+                if (tunnels.length === 0) {
+                    tunnelListEl.innerHTML = `
+                        <div class="empty-state">
+                            <i data-lucide="coffee" style="margin-bottom: 0.5rem;"></i>
+                            <p>暂时没有正在运行的任务</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                tunnelListEl.innerHTML = tunnels.map(t => `
+                    <div class="tunnel-card">
+                        <div class="tunnel-info">
+                            <div class="tunnel-name">
+                                <span class="pill pill-${t.status}">${t.status === 'running' ? '在线' : '停止'}</span>
+                                ${t.name}
+                            </div>
+                            <div class="tunnel-meta">
+                                本地端口: ${t.localPort} • ${new Date(t.createdAt).toLocaleString()}
+                            </div>
+                            ${t.url ? `<a href="${t.url}" target="_blank" class="tunnel-url">${t.url}</a>` : ''}
+                        </div>
+                        <div class="tunnel-actions">
+                            ${t.url ? `
+                            <button class="btn-ghost" onclick="copyToClipboard('${t.url}')" title="复制链接">
+                                <i data-lucide="copy" style="width: 16px;"></i>
+                            </button>` : ''}
+                            <button class="btn-ghost" onclick="deleteTunnel('${t.id}')" title="删除映射">
+                                <i data-lucide="trash-2" style="width: 16px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+            } catch (e) {
+                console.error('Fetch error');
+            }
+        }
+
+        async function deleteTunnel(id) {
+            if (!confirm('确定要删除这个映射吗？')) return;
+            await fetch(`/api/tunnels/${id}`, { method: 'DELETE' });
+            fetchTunnels();
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert('复制成功！');
+        }
+
+        addBtn.onclick = async () => {
+            const name = document.getElementById('tunnel-name').value;
+            const localPort = document.getElementById('local-port').value;
+
+            if (!localPort) return alert('请输入本地端口');
+
+            addBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+
+            try {
+                const res = await fetch('/api/tunnels', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, localPort: parseInt(localPort) })
+                });
+                
+                if (!res.ok) throw new Error('创建失败');
+                
+                document.getElementById('tunnel-name').value = '';
+                document.getElementById('local-port').value = '';
+                await fetchTunnels();
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                addBtn.disabled = false;
+                btnText.style.display = 'inline-block';
+                btnLoader.style.display = 'none';
+            }
+        };
+
+        fetchStatus();
+        fetchTunnels();
+        setInterval(fetchTunnels, 5000);
+    </script>
+</body>
+</html>

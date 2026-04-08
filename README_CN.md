@@ -2,7 +2,8 @@
 
 一个轻量化、全自动的 Cloudflare Tunnel 管理面板。无需公网 IP，无需配置防火墙端口转发，即可轻松将本地服务（Web、SSH、API 等）发布到公网。
 
-![Web UI 预览](https://img.shields.io/badge/UI-专业简约-blue?style=for-the-badge)
+![Web UI 预览](./website/preview.png)
+
 ![平台支持](https://img.shields.io/badge/平台-Windows%20|%20Linux%20|%20macOS-success?style=for-the-badge)
 ![开源协议](https://img.shields.io/badge/协议-MIT-orange?style=for-the-badge)
 

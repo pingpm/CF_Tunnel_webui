@@ -4,7 +4,8 @@
 
 A lightweight, automated management dashboard for Cloudflare Tunnels. Easily expose your local services (Web, SSH, API, etc.) to the internet without a public IP or port forwarding.
 
-![Web UI Preview](https://img.shields.io/badge/UI-Professional-blue?style=for-the-badge)
+![Web UI Preview](./website/preview.png)
+
 ![Platform Support](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
 

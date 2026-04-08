@@ -224,6 +224,22 @@
             flex-shrink: 0;
         }
 
+        .persistence-warning {
+            max-width: 900px;
+            margin: 2rem auto 0;
+            padding: 1rem 1.5rem;
+            background: rgba(244, 129, 32, 0.1);
+            border: 1px solid rgba(244, 129, 32, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #ff9d4d;
+            font-size: 0.9rem;
+        }
+
+        .persistence-warning i { flex-shrink: 0; }
+
         footer { text-align: center; padding: 4rem 2rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem; }
 
         @media (max-width: 768px) {
@@ -313,6 +329,11 @@
                 <p>无需 Cloudflare 账号，由 Cloudflare Edge 提供金融级 SSL 加密保障，隐秘安全。</p>
             </div>
         </section>
+
+        <div class="persistence-warning">
+            <i data-lucide="alert-triangle"></i>
+            <span><strong>注意：</strong> 本程序基于会话运行。关闭控制台窗口或结束进程后，所有生成网址将失效。长期运行请使用 <code>pm2</code>。</span>
+        </div>
 
         <section class="preview">
             <div class="preview-header">

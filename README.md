@@ -60,3 +60,11 @@ If the one-line command fails, please follow these steps:
 ```bash
 curl -sSL https://cft.imdaxia.com/install.sh | bash
 ```
+
+## ⚠️ Important Note
+*   **Session-based Tunnels**: If the `CF_Tunnel` process is closed or terminated, all active tunnel URLs will immediately become invalid.
+*   **Persistence**: For background execution, it is recommended to use a process manager like [PM2](https://pm2.keymetrics.io/):
+    ```bash
+    npm install -g pm2
+    pm2 start server/index.js --name cf-tunnel
+    ```

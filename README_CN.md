@@ -7,7 +7,13 @@
 ![平台支持](https://img.shields.io/badge/平台-Windows%20|%20Linux%20|%20macOS-success?style=for-the-badge)
 ![开源协议](https://img.shields.io/badge/协议-MIT-orange?style=for-the-badge)
 
-## ✨ 功能亮点
+### ⚠️ 重要提示
+*   **会话保持**：一旦关闭 `CF_Tunnel` 运行窗口或终止进程，所有生成的穿透网址将立即失效。
+*   **后台运行**：如果您需要长期保持穿透开启，建议使用 [PM2](https://pm2.keymetrics.io/) 等进程管理工具：
+    ```bash
+    npm install -g pm2
+    pm2 start server/index.js --name cf-tunnel
+    ```
 
 - **一键安装**：为 Windows 和 Linux 提供全自动安装脚本。
 - **智能依赖管理**：自动检测并安装 Node.js、npm 以及适配您系统的最新版 `cloudflared` 二进制文件。

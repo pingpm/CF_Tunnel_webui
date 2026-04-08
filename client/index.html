@@ -415,13 +415,14 @@
                     body: JSON.stringify({ name, localPort: parseInt(localPort) })
                 });
                 
-                if (!res.ok) throw new Error('创建失败');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '创建失败');
                 
                 document.getElementById('tunnel-name').value = '';
                 document.getElementById('local-port').value = '';
                 await fetchTunnels();
             } catch (err) {
-                alert(err.message);
+                alert('提示: ' + err.message);
             } finally {
                 addBtn.disabled = false;
                 btnText.style.display = 'inline-block';

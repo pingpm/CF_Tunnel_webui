@@ -2,7 +2,7 @@
 
 [中文文档](./README_CN.md)
 
-A lightweight, automated management dashboard for Cloudflare Tunnels. Easily expose your local services (Web, SSH, API, etc.) to the internet without a public IP or port forwarding.
+A lightweight engine for Cloudflare Tunnels with a professional management dashboard. Easily expose your local services (Web, SSH, API, etc.) to the internet without a public IP or port forwarding.
 
 ![Web UI Preview](./website/preview.png)
 
@@ -11,33 +11,48 @@ A lightweight, automated management dashboard for Cloudflare Tunnels. Easily exp
 
 ## ✨ Features
 
-- **One-Click Setup**: Fully automated installation script for Windows and Linux.
-- **Smart Dependency Management**: Automatically detects and installs Node.js, npm, and the latest `cloudflared` binary for your OS.
+- **One-Click Setup**: Fully automated installation script for Windows, Linux, and macOS.
+- **Smart Dependency Management**: Automatically detects and installs Node.js, npm, and the latest `cloudflared` binary.
+- **Unlimited Port Mappings**: Create as many tunnels as you need without any software limits.
 - **Modern Dashboard**: High-end minimalist user interface with dark/light mode support.
-- **Dynamic Port Mapping**: Add, monitor, and remove port mappings directly from your browser.
-- **Bilingual Support**: Full Chinese and English user interface.
-- **Zero Configuration**: Uses Cloudflare "Quick Tunnels" (TryCloudflare) to provide public URLs instantly.
+- **Zero Configuration**: Uses Cloudflare "Quick Tunnels" (TryCloudflare) for instant public URLs.
+- **Bilingual Support**: Native Chinese and English interface support.
 
 ---
 
-## 🛠️ Installation
+## 🚀 One-Click Installation
 
-### Windows (PowerShell)
+### 🪟 Windows (PowerShell)
 Open PowerShell and run:
 ```powershell
 iwr -useb https://cft.imdaxia.com/install.ps1 | iex
 ```
 
-## 🛠️ Manual Installation (Fallback)
-If the one-line command fails, please follow these steps:
+### 🍎 Linux / macOS
+Open your terminal and run:
+```bash
+curl -sSL https://cft.imdaxia.com/install.sh | bash
+```
 
-1. **Install Node.js**: Download and install from [nodejs.org](https://nodejs.org/) (LTS version is recommended).
+---
+
+## 📖 How to Use
+
+1.  **Launch**: Run the one-click script above.
+2.  **Access Panel**: Wait for the script to finish and click the **Access Link** displayed in your terminal.
+3.  **Create Tunnels**: Enter your local port in the dashboard and click **Create Tunnel**.
+
+---
+
+## 🛠️ Manual Installation (Fallback)
+If the automated scripts fail, follow these steps:
+
+1. **Install Node.js**: Download from [nodejs.org](https://nodejs.org/) (LTS recommended).
 2. **Download Project**:
    ```bash
    git clone https://github.com/pingpm/CF_Tunnel_webui.git
    cd CF_Tunnel_webui
    ```
-   *(Or download and extract the project [ZIP](https://github.com/pingpm/CF_Tunnel_webui/archive/refs/heads/main.zip))*
 3. **Install Dependencies**:
    ```bash
    npm install
@@ -46,24 +61,13 @@ If the one-line command fails, please follow these steps:
    ```bash
    node server/index.js
    ```
-5. **Open Dashboard**: Go to `http://localhost:11122` in your browser.
+5. **Open Dashboard**: Go to `http://localhost:11122`.
 
 ---
 
-## 📖 How to Use
-
-1.  **Launch**: Run the installation script.
-2.  **Access Control Panel**: Look at your terminal output for the **Access Link**.
-3.  **Create Tunnels**: Open the link, enter your local port, and click **Create Tunnel**.
-
-### Curl-to-Install (One-Liner)
-```bash
-curl -sSL https://cft.imdaxia.com/install.sh | bash
-```
-
 ## ⚠️ Important Note
-*   **Session-based Tunnels**: If the `CF_Tunnel` process is closed or terminated, all active tunnel URLs will immediately become invalid.
-*   **Persistence**: For background execution, it is recommended to use a process manager like [PM2](https://pm2.keymetrics.io/):
+*   **Session-based**: Actions are tied to the current process. Closing the terminal or stopping the app will invalidate all tunnels.
+*   **Background Run**: Use [PM2](https://pm2.keymetrics.io/) to keep it running 24/7:
     ```bash
     npm install -g pm2
     pm2 start server/index.js --name cf-tunnel

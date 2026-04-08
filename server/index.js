@@ -122,7 +122,11 @@ app.post('/api/tunnels', async (req, res) => {
     const { name, localPort } = req.body;
     if (!localPort) return res.status(400).json({ error: 'Port is required' });
 
-    const id = Date.now().toString();
+    // Prevent duplicate mapping
+    const existing = db.mappings.find(m => m.localPort == localPort);
+    if (existing) {
+        return res.status(400).json({ error: `Port ${localPort} is already mapped.` });
+    }
     const newMapping = { id, name: name || `Port ${localPort}`, localPort, status: 'starting', createdAt: new Date() };
     db.mappings.push(newMapping);
     saveDb();

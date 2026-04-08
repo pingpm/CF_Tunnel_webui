@@ -1,6 +1,7 @@
-# Try to fix encoding for emojis
+# Set encoding and security protocol for modern web connections
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Host.UI.RawUI.WindowTitle = "CF_Tunnel Installer"
 
@@ -36,6 +37,7 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
             }
         } catch {
             Write-Host "❌ Failed to download or extract the project." -ForegroundColor Red
+            Write-Host "Error details: $($_.Exception.Message)" -ForegroundColor Gray
             Read-Host "Press Enter to exit..."
             exit
         }

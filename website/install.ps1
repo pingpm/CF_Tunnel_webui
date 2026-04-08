@@ -45,82 +45,68 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
 }
 
 # 1. Check for Node.js and handle installation
-$nodeCheckLimit = "$env:TEMP\cft_node_install_attempt.txt"
+$portableNodeDir = "$PWD\node-bin"
+$nodeExe = "node"
 
-function Refresh-Environment {
-    $env:PATH = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+function Check-Node {
+    if (Get-Command node -ErrorAction SilentlyContinue) { return $true }
+    if (Test-Path "$portableNodeDir\node.exe") { 
+        $script:nodeExe = "$portableNodeDir\node.exe"
+        return $true 
+    }
+    return $false
 }
 
-if (!(Get-Command node -ErrorAction SilentlyContinue)) {
-    # Check common install path directly if command not found
-    $commonPath = "C:\Program Files\nodejs\node.exe"
-    if (Test-Path $commonPath) {
-        $env:PATH += ";C:\Program Files\nodejs"
-    }
-}
-
-if (!(Get-Command node -ErrorAction SilentlyContinue)) {
-    # Check if we are caught in a loop
-    if (Test-Path $nodeCheckLimit) {
-        $attempts = Get-Content $nodeCheckLimit
-        if ([int]$attempts -ge 2) {
-            Write-Host "❌ Still cannot detect Node.js after multiple attempts." -ForegroundColor Red
-            Write-Host "Please RESTART YOUR COMPUTER manually to finish Node.js setup, then run this command again." -ForegroundColor Yellow
-            Remove-Item $nodeCheckLimit
-            Read-Host "Press Enter to exit..."
-            exit
-        }
-        $attempts = [int]$attempts + 1
-        $attempts | Out-File $nodeCheckLimit
-    } else {
-        "1" | Out-File $nodeCheckLimit
-    }
-
-    Write-Host "❌ Node.js is not installed." -ForegroundColor Red
+if (!(Check-Node)) {
+    Write-Host "❌ Node.js not found. Attempting to deploy Portable Node.js..." -ForegroundColor Yellow
     
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        Write-Host "💡 Attempting to install Node.js via winget..." -ForegroundColor Yellow
-        winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
-    } else {
-        Write-Host "⚠️  winget not found. Attempting direct MSI installation..." -ForegroundColor Yellow
-        $msiPath = "$env:TEMP\node-v20.msi"
-        $msiUrl = "https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi"
+    $nodeZipUrl = "https://nodejs.org/dist/v20.11.1/node-v20.11.1-win-x64.zip"
+    $nodeZipFile = "$env:TEMP\node_portable.zip"
+    
+    try {
+        Write-Host "📥 Downloading Portable Node.js (this might take a moment)..." -ForegroundColor Cyan
+        (New-Object Net.WebClient).DownloadFile($nodeZipUrl, $nodeZipFile)
         
-        try {
-            Write-Host "📥 Downloading Node.js MSI..." -ForegroundColor Cyan
-            (New-Object Net.WebClient).DownloadFile($msiUrl, $msiPath)
-            Write-Host "📦 Installing Node.js (Silent)..." -ForegroundColor Yellow
-            $process = Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /quiet /qn /norestart" -Wait -PassThru
-            Remove-Item $msiPath
-        } catch {
-            Write-Host "❌ Failed to download or install Node.js." -ForegroundColor Red
-            Read-Host "Press Enter to exit..."
-            exit
+        Write-Host "📦 Extracting Node.js..." -ForegroundColor Cyan
+        if (Test-Path $portableNodeDir) { Remove-Item -Recurse -Force $portableNodeDir }
+        Expand-Archive -Path $nodeZipFile -DestinationPath "$env:TEMP\node_temp" -Force
+        
+        # GitHub/Node ZIPs have a subfolder
+        $innerFolder = Get-ChildItem -Path "$env:TEMP\node_temp" -Directory | Select-Object -First 1
+        Move-Item -Path "$($innerFolder.FullName)\*" -Destination "$PWD" -Force
+        
+        # Map the executable
+        if (Test-Path "$PWD\node.exe") {
+            $script:nodeExe = "$PWD\node.exe"
+            Write-Host "✅ Portable Node.js ready!" -ForegroundColor Green
         }
-    }
-    
-    Write-Host "✅ Node.js installation completed. Refreshing environment..." -ForegroundColor Green
-    Refresh-Environment
-    
-    if (!(Get-Command node -ErrorAction SilentlyContinue)) {
-        Write-Host "🔄 Restarting PowerShell to apply environment changes..." -ForegroundColor Yellow
-        $currentCommand = "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
-        Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "& { $currentCommand }"
+        
+        Remove-Item $nodeZipFile
+        Remove-Item -Recurse -Force "$env:TEMP\node_temp"
+    } catch {
+        Write-Host "❌ Failed to deploy Portable Node.js. Error: $($_.Exception.Message)" -ForegroundColor Red
+        Read-Host "Press Enter to exit..."
         exit
     }
 }
 
-# Clear the loop tracker if we reach here
-if (Test-Path $nodeCheckLimit) { Remove-Item $nodeCheckLimit }
-Write-Host "✅ Node.js detected: $(node -v)" -ForegroundColor Green
-
 # 2. Install dependencies
-Write-Host "`n📦 Installing npm dependencies (this may take a minute)..." -ForegroundColor Yellow
-npm install
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ npm install failed." -ForegroundColor Red
-    Read-Host "Press Enter to exit..."
-    exit
+Write-Host "`n📦 Installing npm dependencies..." -ForegroundColor Yellow
+if ($script:nodeExe -ne "node") {
+    # If using portable node, we need to find its npm
+    $npmPath = "$PWD\node_modules\npm\bin\npm-cli.js" # Standard layout
+    if (!(Test-Path $npmPath)) {
+        # Fallback to just running npm if it's in the path of the extracted folder
+        & $script:nodeExe npm install
+    } else {
+        & $script:nodeExe $npmPath install
+    }
+} else {
+    npm install
+}
+
+if ($LASTEXITCODE -ne 0 -and $script:nodeExe -eq "node") {
+    Write-Host "⚠️ npm install failed. Trying with portable mode if available..." -ForegroundColor Yellow
 }
 
 # 3. Start the application
@@ -129,11 +115,11 @@ Write-Host "-------------------------------------------------"
 Write-Host "Please wait for the Cloudflare Tunnel to initialize..." -ForegroundColor Cyan
 Write-Host "-------------------------------------------------`n"
 
-node server/index.js
+& $script:nodeExe server/index.js
 
-# If node exits, keep the window open so user can see why
+# Handle errors
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "`n❌ Process exited with error code $LASTEXITCODE" -ForegroundColor Red
+    Write-Host "`n❌ Application stopped with error code $LASTEXITCODE" -ForegroundColor Red
 }
-Read-Host "`nInstallation finished. Press Enter to close this window..."
+Read-Host "`nPress Enter to close this window..."
 

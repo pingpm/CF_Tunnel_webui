@@ -44,43 +44,74 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
     }
 }
 
-# 1. Check for Node.js
+# 1. Check for Node.js and handle installation
+$nodeCheckLimit = "$env:TEMP\cft_node_install_attempt.txt"
+
+function Refresh-Environment {
+    $env:PATH = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
+
 if (!(Get-Command node -ErrorAction SilentlyContinue)) {
+    # Check common install path directly if command not found
+    $commonPath = "C:\Program Files\nodejs\node.exe"
+    if (Test-Path $commonPath) {
+        $env:PATH += ";C:\Program Files\nodejs"
+    }
+}
+
+if (!(Get-Command node -ErrorAction SilentlyContinue)) {
+    # Check if we are caught in a loop
+    if (Test-Path $nodeCheckLimit) {
+        $attempts = Get-Content $nodeCheckLimit
+        if ([int]$attempts -ge 2) {
+            Write-Host "❌ Still cannot detect Node.js after multiple attempts." -ForegroundColor Red
+            Write-Host "Please RESTART YOUR COMPUTER manually to finish Node.js setup, then run this command again." -ForegroundColor Yellow
+            Remove-Item $nodeCheckLimit
+            Read-Host "Press Enter to exit..."
+            exit
+        }
+        $attempts = [int]$attempts + 1
+        $attempts | Out-File $nodeCheckLimit
+    } else {
+        "1" | Out-File $nodeCheckLimit
+    }
+
     Write-Host "❌ Node.js is not installed." -ForegroundColor Red
     
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         Write-Host "💡 Attempting to install Node.js via winget..." -ForegroundColor Yellow
-        Write-Host "📥 Downloading and installing Node.js LTS..." -ForegroundColor Cyan
         winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
     } else {
-        # Fallback: Manual MSI Download & Install
         Write-Host "⚠️  winget not found. Attempting direct MSI installation..." -ForegroundColor Yellow
         $msiPath = "$env:TEMP\node-v20.msi"
-        $msiUrl = "https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi" # Static version to ensure stability
+        $msiUrl = "https://nodejs.org/dist/v20.11.1/node-v20.11.1-x64.msi"
         
         try {
-            Write-Host "📥 Downloading Node.js MSI from nodejs.org..." -ForegroundColor Cyan
+            Write-Host "📥 Downloading Node.js MSI..." -ForegroundColor Cyan
             (New-Object Net.WebClient).DownloadFile($msiUrl, $msiPath)
-            Write-Host "📦 Performing silent installation (this may take a minute)..." -ForegroundColor Yellow
-            Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /quiet /qn /norestart" -Wait
+            Write-Host "📦 Installing Node.js (Silent)..." -ForegroundColor Yellow
+            $process = Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /quiet /qn /norestart" -Wait -PassThru
             Remove-Item $msiPath
         } catch {
             Write-Host "❌ Failed to download or install Node.js." -ForegroundColor Red
-            Write-Host "Please install Node.js manually from https://nodejs.org/" -ForegroundColor Yellow
             Read-Host "Press Enter to exit..."
             exit
         }
     }
     
-    Write-Host "✅ Node.js installation completed." -ForegroundColor Green
-    Write-Host "🔄 Restarting PowerShell to apply environment changes..." -ForegroundColor Yellow
+    Write-Host "✅ Node.js installation completed. Refreshing environment..." -ForegroundColor Green
+    Refresh-Environment
     
-    # Launch a new PowerShell that continues the same command and then exit this one
-    $currentCommand = "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
-    Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "& { $currentCommand }"
-    exit
+    if (!(Get-Command node -ErrorAction SilentlyContinue)) {
+        Write-Host "🔄 Restarting PowerShell to apply environment changes..." -ForegroundColor Yellow
+        $currentCommand = "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
+        Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "& { $currentCommand }"
+        exit
+    }
 }
 
+# Clear the loop tracker if we reach here
+if (Test-Path $nodeCheckLimit) { Remove-Item $nodeCheckLimit }
 Write-Host "✅ Node.js detected: $(node -v)" -ForegroundColor Green
 
 # 2. Install dependencies

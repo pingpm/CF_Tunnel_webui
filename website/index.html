@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CF_Tunnel_webui - 下一代 Cloudflare 穿透管理方案</title>
+    <title>CF_Tunnel - 极致简约的内网穿透管理工具 | 云端内网穿透解决方案</title>
+    <meta name="description" content="CF_Tunnel 是一款基于 Cloudflare Tunnel 的高性能内网穿透管理工具。支持一键安装、多端口映射、曲线图状态监控，无需公网IP即可让你的本地服务（Web、SSH、NAS）瞬间发布到公网。">
+    <meta name="keywords" content="内网穿透, Cloudflare Tunnel, 内网穿透工具, 映射, 反向代理, 公网访问 NAS, 穿透控制面板, CF_Tunnel">
+    <meta name="author" content="pingpm">
+    
+    <!-- Open Graph / SEO -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cft.imdaxia.com/">
+    <meta property="og:title" content="CF_Tunnel - 极致简约的内网穿透管理工具">
+    <meta property="og:description" content="一键安装，让你的内网服务瞬间上线。最优雅的内网穿透方案。">
+    
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
@@ -16,7 +26,7 @@
             --border: #30363d;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }
         body { background: var(--bg); color: var(--text); overflow-x: hidden; }
 
         .navbar {
@@ -31,7 +41,7 @@
         .logo { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem; color: var(--primary); }
 
         .hero {
-            padding: 8rem 2rem;
+            padding: 6rem 2rem 4rem;
             text-align: center;
             background: radial-gradient(circle at 50% 50%, rgba(244, 129, 32, 0.1), transparent 70%);
         }
@@ -42,6 +52,7 @@
         .gradient-text {
             background: linear-gradient(to right, #f48120, #ffba75);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -56,6 +67,8 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
+            border: none;
         }
 
         .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 20px var(--primary-glow); }
@@ -64,20 +77,60 @@
         .btn-secondary { border: 1px solid var(--border); color: var(--text); background: rgba(255,255,255,0.05); }
         .btn-secondary:hover { background: rgba(255,255,255,0.1); }
 
+        .install-section {
+            max-width: 800px;
+            margin: 0 auto 6rem;
+            padding: 0 1rem;
+        }
+
+        .install-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--border);
+            color: var(--text);
+            border-color: var(--primary);
+        }
+
         .install-box {
             background: #000;
             border: 1px solid var(--border);
-            padding: 1rem 1.5rem;
+            padding: 1.25rem 1.75rem;
             border-radius: 1rem;
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 1.5rem;
-            margin-top: 4rem;
+            justify-content: space-between;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 100%;
         }
 
-        .code { font-family: "SF Mono", "Fira Code", monospace; color: #a5d6ff; font-size: 0.9rem; }
-        .copy-btn { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+        .code-container { display: flex; flex-direction: column; text-align: left; }
+        .code-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
+        .code { font-family: "SF Mono", "Fira Code", monospace; color: #a5d6ff; font-size: 0.95rem; word-break: break-all; }
+        
+        .copy-btn { 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            transition: color 0.2s; 
+            background: transparent; 
+            border: none;
+            padding: 0.5rem;
+        }
         .copy-btn:hover { color: white; }
 
         .features {
@@ -138,7 +191,7 @@
     <nav class="navbar">
         <div class="logo">
             <i data-lucide="cloud-lightning"></i>
-            CF_Tunnel_webui
+            CF_Tunnel
         </div>
         <div>
             <a href="https://github.com/pingpm/CF_Tunnel_webui" class="btn btn-secondary">
@@ -149,35 +202,46 @@
 
     <main>
         <section class="hero">
-            <h1>让内网穿透<br><span class="gradient-text">从未如此简单专业</span></h1>
-            <p>基于 Cloudflare Tunnel 的新一代管理面板。无需配置，一键安装，让你的本地服务瞬间在公网优雅上线。</p>
+            <h1>内网穿透<br><span class="gradient-text">从未如此简单专业</span></h1>
+            <p>基于 Cloudflare Tunnel 的专业内网穿透管理面板。无需公网IP，简单一行命令，让你的本地服务瞬间在公网优雅上线。</p>
             
             <div class="cta-container">
-                <a href="#install" class="btn btn-primary">立即开始使用</a>
-                <a href="https://github.com/pingpm/CF_Tunnel_webui/blob/main/README_CN.md" class="btn btn-secondary">查看文档</a>
+                <a href="#install" class="btn btn-primary">立即开始安装</a>
+                <a href="https://github.com/pingpm/CF_Tunnel_webui/blob/main/README_CN.md" class="btn btn-secondary">查看完整文档</a>
             </div>
+        </section>
 
-            <div class="install-box" id="install">
-                <span class="code">curl -sSL https://raw.githubusercontent.com/.../install.sh | bash</span>
-                <i data-lucide="copy" class="copy-btn" id="copy-btn"></i>
+        <section class="install-section" id="install">
+            <div class="install-tabs">
+                <button class="tab-btn active" onclick="setInstall('linux')">Linux / macOS</button>
+                <button class="tab-btn" onclick="setInstall('windows')">Windows (PowerShell)</button>
+            </div>
+            <div class="install-box">
+                <div class="code-container">
+                    <span class="code-label" id="platform-label">Linux / macOS 一键安装命令</span>
+                    <span class="code" id="install-command">curl -sSL https://cft.imdaxia.com/install.sh | bash</span>
+                </div>
+                <button class="copy-btn" id="copy-btn" title="点击复制">
+                    <i data-lucide="copy" style="width: 20px;"></i>
+                </button>
             </div>
         </section>
 
         <section class="features">
             <div class="feature-card">
                 <i data-lucide="zap" style="width: 40px; height: 40px;"></i>
-                <h3>极速安装</h3>
-                <p>自适应 Linux 与 Windows 环境。智能检测 Node.js 并在缺失时自动补全，秒级进入工作状态。</p>
+                <h3>极速穿透</h3>
+                <p>自适应多种运行环境。智能检测依赖，自动补全二进制文件，秒级映射公网地址。</p>
             </div>
             <div class="feature-card">
                 <i data-lucide="layout" style="width: 40px; height: 40px;"></i>
-                <h3>专业界面</h3>
-                <p>拒绝过时的 AI 审美。极致简约的 UI 设计，支持中英双语与响应式布局，无论手机还是电脑皆可随心掌控。</p>
+                <h3>专业极简 UI</h3>
+                <p>摒弃浮夸，回归专业。极致简约的 UI 设计，支持自适应深色/浅色模式，移动端友好适配。</p>
             </div>
             <div class="feature-card">
                 <i data-lucide="shield-check" style="width: 40px; height: 40px;"></i>
-                <h3>零配置上线</h3>
-                <p>无需 Cloudflare 账号，无需购买域名。利用 TryCloudflare 快速通道，瞬间获取专属公网加密连接。</p>
+                <h3>零配置安全</h3>
+                <p>无需 Cloudflare 账号，由 Cloudflare Edge 提供金融级 SSL 加密保障，隐秘安全。</p>
             </div>
         </section>
 
@@ -189,24 +253,39 @@
             </div>
             <div class="preview-body">
                 <i data-lucide="monitor" style="width: 60px; height: 60px; margin-bottom: 2rem;"></i>
-                <p>Dashboard UI Preview coming soon...</p>
-                <!-- Space for a placeholder/mockup -->
+                <p>Dashboard UI Preview</p>
                 <div style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">
-                    管理面板默认运行于 11122 端口，全自动 SSL 加密映射。
+                    管理面板监听端口: 11122
                 </div>
             </div>
         </section>
     </main>
 
     <footer>
-        <p>&copy; 2026 CF_Tunnel_webui. 为开发者而生的网络工具。</p>
+        <p>&copy; 2026 CF_Tunnel. 为内网穿透爱好者而生。</p>
     </footer>
 
     <script>
         lucide.createIcons();
 
+        const commands = {
+            linux: "curl -sSL https://cft.imdaxia.com/install.sh | bash",
+            windows: "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
+        };
+        const labels = {
+            linux: "Linux / macOS 一键安装命令",
+            windows: "Windows PowerShell 一键安装命令"
+        };
+
+        function setInstall(platform) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('install-command').textContent = commands[platform];
+            document.getElementById('platform-label').textContent = labels[platform];
+        }
+
         document.getElementById('copy-btn').onclick = function() {
-            const code = "curl -sSL https://raw.githubusercontent.com/pingpm/CF_Tunnel_webui/main/install.sh | bash";
+            const code = document.getElementById('install-command').textContent;
             navigator.clipboard.writeText(code);
             alert('命令已复制！');
         };

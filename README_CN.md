@@ -1,4 +1,4 @@
-# 🚀 CF_Tunnel_webui
+# 🚀 CF_Tunnel
 
 一个轻量化、全自动的 Cloudflare Tunnel 管理面板。无需公网 IP，无需配置防火墙端口转发，即可轻松将本地服务（Web、SSH、API 等）发布到公网。
 
@@ -22,10 +22,7 @@
 ### Linux / macOS
 打开终端并运行：
 ```bash
-git clone https://github.com/pingpm/CF_Tunnel_webui.git
-cd CF_Tunnel_webui
-chmod +x install.sh
-./install.sh
+curl -sSL https://cft.imdaxia.com/install.sh | bash
 ```
 
 ### Windows (PowerShell)
@@ -44,5 +41,5 @@ chmod +x install.sh
 
 ### 一键安装命令 (Curl-to-Install)
 ```bash
-curl -sSL https://raw.githubusercontent.com/pingpm/CF_Tunnel_webui/main/install.sh | bash
+curl -sSL https://cft.imdaxia.com/install.sh | bash
 ```

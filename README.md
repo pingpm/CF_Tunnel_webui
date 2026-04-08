@@ -1,4 +1,4 @@
-# 🚀 CF_Tunnel_webui
+# 🚀 CF_Tunnel
 
 [中文文档](./README_CN.md)
 
@@ -24,10 +24,7 @@ A lightweight, automated management dashboard for Cloudflare Tunnels. Easily exp
 ### Linux / macOS
 Open your terminal and run:
 ```bash
-git clone https://github.com/pingpm/CF_Tunnel_webui.git
-cd CF_Tunnel_webui
-chmod +x install.sh
-./install.sh
+curl -sSL https://cft.imdaxia.com/install.sh | bash
 ```
 
 ### Windows (PowerShell)
@@ -46,5 +43,5 @@ Download the repository and run:
 
 ### Curl-to-Install (One-Liner)
 ```bash
-curl -sSL https://raw.githubusercontent.com/pingpm/CF_Tunnel_webui/main/install.sh | bash
+curl -sSL https://cft.imdaxia.com/install.sh | bash
 ```

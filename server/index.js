@@ -37,10 +37,21 @@ function saveDb() {
  */
 function startTunnel(localPort, id = null) {
     return new Promise((resolve, reject) => {
-        console.log(`🚀 Starting tunnel for port ${localPort}...`);
+        const absoluteBin = path.resolve(bin);
+        console.log(`🚀 Starting tunnel for port ${localPort} using binary: ${absoluteBin}`);
         
+        if (!fs.existsSync(absoluteBin)) {
+            return reject(new Error(`Binary not found at ${absoluteBin}`));
+        }
+
+        const stats = fs.statSync(absoluteBin);
+        console.log(`📊 Binary size: ${stats.size} bytes`);
+        if (stats.size === 0) {
+            return reject(new Error(`Binary at ${absoluteBin} is empty (0 bytes).`));
+        }
+
         // cloudflared tunnel --url http://localhost:PORT
-        const tunnelProcess = spawn(bin, ['tunnel', '--url', `http://localhost:${localPort}`]);
+        const tunnelProcess = spawn(absoluteBin, ['tunnel', '--url', `http://localhost:${localPort}`]);
         
         let urlDetected = false;
         let url = '';

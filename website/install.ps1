@@ -1,31 +1,42 @@
+# Set encoding to UTF-8 to support emojis and international characters
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "CF_Tunnel Installer"
 
 Write-Host "`n🚀 Starting CF_Tunnel Installation...`n" -ForegroundColor Cyan
 
 # 0. Remote execution handler
-# If package.json is missing, we need to clone the repo first
+# If package.json is missing, we need to get the code first
 if (!(Test-Path "package.json")) {
-    Write-Host "📥 Project files not found. Preparing to clone from GitHub..." -ForegroundColor Yellow
+    Write-Host "📥 Project files not found. Preparing to fetch code..." -ForegroundColor Yellow
     
-    # Check if git is installed
-    if (!(Get-Command git -ErrorAction SilentlyContinue)) {
-        Write-Host "❌ Git is not installed. Continuous installation failed." -ForegroundColor Red
-        Write-Host "Please install Git or download the repository manually." -ForegroundColor Yellow
-        Read-Host "Press Enter to exit..."
-        exit
-    }
+    $REPO_URL = "https://github.com/pingpm/CF_Tunnel_webui"
+    $DIR_NAME = "CF_Tunnel-main"
 
-    $REPO_URL = "https://github.com/pingpm/CF_Tunnel_webui.git"
-    Write-Host "📥 Cloning repository from $REPO_URL..." -ForegroundColor Cyan
-    
-    git clone $REPO_URL CF_Tunnel-temp
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "❌ Failed to clone repository." -ForegroundColor Red
-        Read-Host "Press Enter to exit..."
-        exit
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        # Method 1: Git Clone
+        Write-Host "📥 Cloning repository via Git..." -ForegroundColor Cyan
+        git clone "$REPO_URL.git" "CF_Tunnel-temp"
+        if ($LASTEXITCODE -eq 0) {
+            Set-Location -Path "CF_Tunnel-temp"
+        }
+    } else {
+        # Method 2: Direct ZIP Download (Fallback for systems without Git)
+        Write-Host "⚠️  Git not detected. Downloading ZIP archive instead..." -ForegroundColor Yellow
+        $zipFile = "$env:TEMP\cft_latest.zip"
+        $destFolder = "$PWD\CF_Tunnel-main"
+        
+        try {
+            Invoke-WebRequest -Uri "$REPO_URL/archive/refs/heads/main.zip" -OutFile $zipFile
+            Write-Host "📦 Extracting files..." -ForegroundColor Cyan
+            Expand-Archive -Path $zipFile -DestinationPath "$PWD" -Force
+            Remove-Item $zipFile
+            Set-Location -Path $destFolder
+        } catch {
+            Write-Host "❌ Failed to download or extract the project." -ForegroundColor Red
+            Read-Host "Press Enter to exit..."
+            exit
+        }
     }
-    
-    Set-Location -Path "CF_Tunnel-temp"
 }
 
 # 1. Check for Node.js

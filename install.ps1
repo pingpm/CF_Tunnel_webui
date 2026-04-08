@@ -95,20 +95,25 @@ if (!(Check-Node)) {
 # 2. Install dependencies
 Write-Host "`n📦 Installing npm dependencies..." -ForegroundColor Yellow
 if ($script:nodeExe -ne "node") {
-    # If using portable node, we need to find its npm
-    $npmPath = "$PWD\node_modules\npm\bin\npm-cli.js" # Standard layout
-    if (!(Test-Path $npmPath)) {
-        # Fallback to just running npm if it's in the path of the extracted folder
-        & $script:nodeExe npm install
+    # If using portable node, find npm.cmd
+    $npmCmd = "$PWD\npm.cmd"
+    if (Test-Path $npmCmd) {
+        & $npmCmd install
     } else {
-        & $script:nodeExe $npmPath install
+        # Fallback to internal CLI if cmd missing
+        $npmCli = "$PWD\node_modules\npm\bin\npm-cli.js"
+        if (Test-Path $npmCli) {
+            & $script:nodeExe $npmCli install
+        } else {
+            Write-Host "❌ Could not find npm. Please install manually." -ForegroundColor Red
+        }
     }
 } else {
     npm install
 }
 
-if ($LASTEXITCODE -ne 0 -and $script:nodeExe -eq "node") {
-    Write-Host "⚠️ npm install failed. Trying with portable mode if available..." -ForegroundColor Yellow
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠️ npm install failed." -ForegroundColor Yellow
 }
 
 # 3. Start the application
@@ -117,6 +122,8 @@ Write-Host "-------------------------------------------------"
 Write-Host "Please wait for the Cloudflare Tunnel to initialize..." -ForegroundColor Cyan
 Write-Host "-------------------------------------------------`n"
 
+# Enable Debug for cloudflared output
+$env:DEBUG = "true"
 & $script:nodeExe server/index.js
 
 # Handle errors

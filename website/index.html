@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CF_Tunnel_webui - 下一代 Cloudflare 穿透管理方案</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #f48120;
+            --primary-glow: rgba(244, 129, 32, 0.4);
+            --bg: #03060b;
+            --card-bg: #0d1117;
+            --text: #f0f6fc;
+            --text-muted: #8b949e;
+            --border: #30363d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+        body { background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem; color: var(--primary); }
+
+        .hero {
+            padding: 8rem 2rem;
+            text-align: center;
+            background: radial-gradient(circle at 50% 50%, rgba(244, 129, 32, 0.1), transparent 70%);
+        }
+
+        .hero h1 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+        .hero p { font-size: 1.25rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 3rem; }
+
+        .gradient-text {
+            background: linear-gradient(to right, #f48120, #ffba75);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-container { display: flex; justify-content: center; gap: 1rem; align-items: center; }
+
+        .btn {
+            padding: 0.8rem 2rem;
+            border-radius: 99px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 20px var(--primary-glow); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px var(--primary-glow); }
+
+        .btn-secondary { border: 1px solid var(--border); color: var(--text); background: rgba(255,255,255,0.05); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+        .install-box {
+            background: #000;
+            border: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-top: 4rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .code { font-family: "SF Mono", "Fira Code", monospace; color: #a5d6ff; font-size: 0.9rem; }
+        .copy-btn { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+        .copy-btn:hover { color: white; }
+
+        .features {
+            max-width: 1200px;
+            margin: 4rem auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 0 2rem;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .feature-card i { color: var(--primary); margin-bottom: 1.5rem; display: block; }
+        .feature-card h3 { font-size: 1.5rem; margin-bottom: 1rem; }
+        .feature-card p { color: var(--text-muted); line-height: 1.6; }
+
+        .preview {
+            max-width: 1000px;
+            margin: 6rem auto;
+            border-radius: 1.5rem;
+            border: 1px solid var(--border);
+            background: #0d1117;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        }
+
+        .preview-header {
+            background: #161b22;
+            padding: 0.75rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; background: #30363d; }
+
+        .preview-body { padding: 4rem; text-align: center; color: var(--text-muted); }
+
+        footer { text-align: center; padding: 4rem 2rem; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.9rem; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .hero p { font-size: 1.1rem; }
+            .cta-container { flex-direction: column; }
+            .navbar { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <i data-lucide="cloud-lightning"></i>
+            CF_Tunnel_webui
+        </div>
+        <div>
+            <a href="https://github.com/pingpm/CF_Tunnel_webui" class="btn btn-secondary">
+                <i data-lucide="github"></i> GitHub
+            </a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <h1>让内网穿透<br><span class="gradient-text">从未如此简单专业</span></h1>
+            <p>基于 Cloudflare Tunnel 的新一代管理面板。无需配置，一键安装，让你的本地服务瞬间在公网优雅上线。</p>
+            
+            <div class="cta-container">
+                <a href="#install" class="btn btn-primary">立即开始使用</a>
+                <a href="https://github.com/pingpm/CF_Tunnel_webui/blob/main/README_CN.md" class="btn btn-secondary">查看文档</a>
+            </div>
+
+            <div class="install-box" id="install">
+                <span class="code">curl -sSL https://raw.githubusercontent.com/.../install.sh | bash</span>
+                <i data-lucide="copy" class="copy-btn" id="copy-btn"></i>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="feature-card">
+                <i data-lucide="zap" style="width: 40px; height: 40px;"></i>
+                <h3>极速安装</h3>
+                <p>自适应 Linux 与 Windows 环境。智能检测 Node.js 并在缺失时自动补全，秒级进入工作状态。</p>
+            </div>
+            <div class="feature-card">
+                <i data-lucide="layout" style="width: 40px; height: 40px;"></i>
+                <h3>专业界面</h3>
+                <p>拒绝过时的 AI 审美。极致简约的 UI 设计，支持中英双语与响应式布局，无论手机还是电脑皆可随心掌控。</p>
+            </div>
+            <div class="feature-card">
+                <i data-lucide="shield-check" style="width: 40px; height: 40px;"></i>
+                <h3>零配置上线</h3>
+                <p>无需 Cloudflare 账号，无需购买域名。利用 TryCloudflare 快速通道，瞬间获取专属公网加密连接。</p>
+            </div>
+        </section>
+
+        <section class="preview">
+            <div class="preview-header">
+                <div class="dot" style="background:#ff5f56"></div>
+                <div class="dot" style="background:#ffbd2e"></div>
+                <div class="dot" style="background:#27c93f"></div>
+            </div>
+            <div class="preview-body">
+                <i data-lucide="monitor" style="width: 60px; height: 60px; margin-bottom: 2rem;"></i>
+                <p>Dashboard UI Preview coming soon...</p>
+                <!-- Space for a placeholder/mockup -->
+                <div style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">
+                    管理面板默认运行于 11122 端口，全自动 SSL 加密映射。
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 CF_Tunnel_webui. 为开发者而生的网络工具。</p>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        document.getElementById('copy-btn').onclick = function() {
+            const code = "curl -sSL https://raw.githubusercontent.com/pingpm/CF_Tunnel_webui/main/install.sh | bash";
+            navigator.clipboard.writeText(code);
+            alert('命令已复制！');
+        };
+    </script>
+</body>
+</html>

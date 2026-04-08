@@ -48,9 +48,15 @@ if (!(Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "💡 Attempting to install Node.js via winget..." -ForegroundColor Yellow
     
     if (Get-Command winget -ErrorAction SilentlyContinue) {
-        winget install OpenJS.NodeJS.LTS
-        Write-Host "✅ Node.js installation triggered. Please RESTART YOUR TERMINAL after it finishes." -ForegroundColor Green
-        Read-Host "Press Enter to exit..."
+        Write-Host "📥 Downloading and installing Node.js LTS..." -ForegroundColor Cyan
+        winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements
+        
+        Write-Host "✅ Node.js installation started." -ForegroundColor Green
+        Write-Host "🔄 Restarting PowerShell to apply environment changes..." -ForegroundColor Yellow
+        
+        # Launch a new PowerShell that continues the same command and then exit this one
+        $currentCommand = "iwr -useb https://cft.imdaxia.com/install.ps1 | iex"
+        Start-Process powershell.exe -ArgumentList "-NoExit", "-Command", "& { $currentCommand }"
         exit
     } else {
         Write-Host "Please install Node.js manually from https://nodejs.org/" -ForegroundColor Yellow

@@ -14,9 +14,18 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
     $REPO_URL = "https://github.com/pingpm/CF_Tunnel_webui"
 
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        Write-Host "📥 Cloning repository via Git..." -ForegroundColor Cyan
-        git clone "$REPO_URL.git" "CF_Tunnel-temp"
-        if (Test-Path "CF_Tunnel-temp") { Set-Location -Path "CF_Tunnel-temp" }
+        $installDir = "CF_Tunnel-temp"
+        if ((Test-Path "$installDir\package.json")) {
+            Write-Host "✅ Existing installation found. Skipping download..." -ForegroundColor Green
+        } else {
+            if (Test-Path $installDir) {
+                Write-Host "⚠️  Directory exists but is incomplete. Removing and re-cloning..." -ForegroundColor Yellow
+                Remove-Item -Recurse -Force $installDir
+            }
+            Write-Host "📥 Cloning repository via Git..." -ForegroundColor Cyan
+            git clone "$REPO_URL.git" $installDir
+        }
+        if (Test-Path $installDir) { Set-Location -Path $installDir }
     } else {
         Write-Host "⚠️  Git not detected. Downloading ZIP archive instead..." -ForegroundColor Yellow
         $zipFile = "$env:TEMP\cft_latest.zip"

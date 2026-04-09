@@ -22,16 +22,26 @@ if [ ! -f "package.json" ] && [ ! -d "server" ]; then
         echo -e "${RED}❌ Git is not installed. Please install git first.${NC}"
         exit 1
     fi
-    # Use a temporary directory or current dir to clone
-    REPO_URL="https://github.com/pingpm/CF_Tunnel_webui.git" # IMPORTANT: User should update this to their own URL
-    echo -e "${CYAN}📥 Cloning repository from $REPO_URL...${NC}"
-    git clone $REPO_URL CF_Tunnel-temp
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ Failed to clone repository.${NC}"
-        read -p "Press Enter to exit..."
-        exit 1
+    REPO_URL="https://github.com/pingpm/CF_Tunnel_webui.git"
+    INSTALL_DIR="CF_Tunnel-temp"
+
+    if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/package.json" ]; then
+        echo -e "${GREEN}✅ Existing installation found. Skipping download...${NC}"
+    else
+        # Remove empty or broken directory if it exists
+        if [ -d "$INSTALL_DIR" ]; then
+            echo -e "${YELLOW}⚠️  Directory exists but is incomplete. Removing and re-cloning...${NC}"
+            rm -rf "$INSTALL_DIR"
+        fi
+        echo -e "${CYAN}📥 Cloning repository from $REPO_URL...${NC}"
+        git clone "$REPO_URL" "$INSTALL_DIR"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}❌ Failed to clone repository.${NC}"
+            read -p "Press Enter to exit..."
+            exit 1
+        fi
     fi
-    cd CF_Tunnel-temp
+    cd "$INSTALL_DIR"
 fi
 
 # 1. Check for Node.js

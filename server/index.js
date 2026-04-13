@@ -153,6 +153,44 @@ app.post('/api/tunnels', async (req, res) => {
     }
 });
 
+// Stop a tunnel (keep mapping, just kill process)
+app.post('/api/tunnels/:id/stop', (req, res) => {
+    const { id } = req.params;
+    const tunnelInfo = activeTunnels.get(id);
+    if (!tunnelInfo) return res.status(400).json({ error: 'Tunnel is not running' });
+
+    try { tunnelInfo.process.kill(); } catch(e) {}
+    activeTunnels.delete(id);
+
+    const mapping = db.mappings.find(m => m.id === id);
+    if (mapping) { mapping.status = 'stopped'; saveDb(); }
+
+    res.json({ success: true });
+});
+
+// Resume a stopped tunnel
+app.post('/api/tunnels/:id/start', async (req, res) => {
+    const { id } = req.params;
+    const mapping = db.mappings.find(m => m.id === id);
+    if (!mapping) return res.status(404).json({ error: 'Mapping not found' });
+    if (activeTunnels.has(id)) return res.status(400).json({ error: 'Tunnel is already running' });
+
+    mapping.status = 'starting';
+    saveDb();
+
+    try {
+        const { process, url } = await startTunnel(mapping.localPort, id);
+        activeTunnels.set(id, { process, url });
+        mapping.status = 'running';
+        saveDb();
+        res.json({ success: true, url });
+    } catch (err) {
+        mapping.status = 'failed';
+        saveDb();
+        res.status(500).json({ error: `Failed to start tunnel: ${err.message}` });
+    }
+});
+
 app.delete('/api/tunnels/:id', (req, res) => {
     const { id } = req.params;
     const tunnelInfo = activeTunnels.get(id);

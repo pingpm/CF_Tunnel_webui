@@ -242,23 +242,6 @@
         .pill-running { background: #dcfce7; color: #166534; }
         .pill-starting { background: #fef9c3; color: #854d0e; }
         .pill-stopped { background: #fee2e2; color: #991b1b; }
-        .pill-failed { background: #fee2e2; color: #991b1b; }
-
-        .btn-stop {
-            background: transparent;
-            color: var(--text-muted);
-            padding: 0.5rem;
-            border: none;
-        }
-        .btn-stop:hover { background: rgba(239,68,68,0.1); color: var(--danger); }
-
-        .btn-resume {
-            background: transparent;
-            color: var(--text-muted);
-            padding: 0.5rem;
-            border: none;
-        }
-        .btn-resume:hover { background: rgba(16,185,129,0.1); color: var(--success); }
 
         .empty-state {
             text-align: center;
@@ -388,17 +371,9 @@
                             ${t.url ? `<a href="${t.url}" target="_blank" class="tunnel-url">${t.url}</a>` : ''}
                         </div>
                         <div class="tunnel-actions">
-                            ${t.url && t.status === 'running' ? `
+                            ${t.url ? `
                             <button class="btn-ghost" onclick="copyToClipboard('${t.url}')" title="复制链接">
                                 <i data-lucide="copy" style="width: 16px;"></i>
-                            </button>` : ''}
-                            ${t.status === 'running' ? `
-                            <button class="btn-stop" onclick="stopTunnel('${t.id}')" title="停止隧道">
-                                <i data-lucide="square" style="width: 16px;"></i>
-                            </button>` : ''}
-                            ${t.status === 'stopped' || t.status === 'failed' ? `
-                            <button class="btn-resume" onclick="resumeTunnel('${t.id}')" title="恢复隧道">
-                                <i data-lucide="play" style="width: 16px;"></i>
                             </button>` : ''}
                             <button class="btn-ghost" onclick="deleteTunnel('${t.id}')" title="删除映射">
                                 <i data-lucide="trash-2" style="width: 16px;"></i>
@@ -415,26 +390,6 @@
         async function deleteTunnel(id) {
             if (!confirm('确定要删除这个映射吗？')) return;
             await fetch(`/api/tunnels/${id}`, { method: 'DELETE' });
-            fetchTunnels();
-        }
-
-        async function stopTunnel(id) {
-            await fetch(`/api/tunnels/${id}/stop`, { method: 'POST' });
-            fetchTunnels();
-        }
-
-        async function resumeTunnel(id) {
-            const card = event.currentTarget.closest('.tunnel-card');
-            const btn = event.currentTarget;
-            btn.disabled = true;
-            btn.innerHTML = '<span class="loader"></span>';
-            try {
-                const res = await fetch(`/api/tunnels/${id}/start`, { method: 'POST' });
-                const data = await res.json();
-                if (!res.ok) alert('恢复失败: ' + data.error);
-            } catch(e) {
-                alert('恢复失败');
-            }
             fetchTunnels();
         }
 

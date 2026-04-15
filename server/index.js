@@ -202,20 +202,30 @@ async function installBinary() {
     // Attempt 2: Mirror fallback (China friendly)
     const platform = process.platform;
     const arch = process.arch;
-    let binaryName = '';
 
-    if (platform === 'win32') {
-        binaryName = arch === 'x64' ? 'cloudflared-windows-amd64.exe' : 'cloudflared-windows-386.exe';
-    } else if (platform === 'darwin') {
-        binaryName = arch === 'arm64' ? 'cloudflared-darwin-arm64.tgz' : 'cloudflared-darwin-amd64.tgz';
-    } else if (platform === 'linux') {
-        binaryName = arch === 'x64' ? 'cloudflared-linux-amd64' : (arch === 'arm64' ? 'cloudflared-linux-arm64' : 'cloudflared-linux-386');
+    // Fallback version with known-good mirror URLs (update periodically)
+    const FALLBACK_VERSION = '2026.3.0';
+    const MIRROR_BASE = `https://githubproxy.cc/https://github.com/cloudflare/cloudflared/releases/download/${FALLBACK_VERSION}`;
+
+    const FALLBACK_URLS = {
+        'darwin-arm64':  `${MIRROR_BASE}/cloudflared-darwin-arm64.tgz`,
+        'darwin-x64':    `${MIRROR_BASE}/cloudflared-darwin-amd64.tgz`,
+        'linux-x64':     `${MIRROR_BASE}/cloudflared-linux-amd64`,
+        'linux-arm64':   `${MIRROR_BASE}/cloudflared-linux-arm64`,
+        'linux-arm':     `${MIRROR_BASE}/cloudflared-linux-armhf`,
+        'linux-ia32':    `${MIRROR_BASE}/cloudflared-linux-386`,
+        'win32-x64':     `${MIRROR_BASE}/cloudflared-windows-amd64.exe`,
+    };
+
+    const key = `${platform}-${arch}`;
+    const mirrorUrl = FALLBACK_URLS[key];
+
+    if (!mirrorUrl) {
+        console.error(`❌ No fallback URL available for platform: ${key}`);
+        process.exit(1);
     }
 
-    if (!binaryName) throw new Error('Unsupported platform');
-
-    const mirrorUrl = `https://ghproxy.net/https://github.com/cloudflare/cloudflared/releases/latest/download/${binaryName}`;
-    console.log(`📥 Downloading from mirror: ${mirrorUrl}`);
+    console.log(`📥 Downloading fallback binary (${FALLBACK_VERSION}) from mirror: ${mirrorUrl}`);
     await downloadBinary(mirrorUrl, bin);
 }
 

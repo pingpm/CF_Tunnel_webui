@@ -55,6 +55,53 @@ fi
 echo -e "${GREEN}✅ Node.js detected: $(node -v)${NC}"
 
 # 2. Install dependencies
+echo -e "\n${YELLOW}📦 Preparing installation environment...${NC}"
+
+# Check for China IP to enable acceleration
+echo -e "${CYAN}🔍 Checking network environment...${NC}"
+COUNTRY=$(curl -s --connect-timeout 5 https://ipapi.co/country/)
+
+if [ "$COUNTRY" = "CN" ]; then
+    echo -e "${YELLOW}🌏 Detect you are in China, enabling GitHub proxy acceleration...${NC}"
+    
+    # 1. Detect OS and Architecture
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m)
+    
+    # 2. Map Architecture
+    if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; fi
+    if [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; fi
+
+    # 3. Fetch latest cloudflared version from GitHub API
+    echo -e "${CYAN}📡 Fetching latest cloudflared version...${NC}"
+    LATEST_VERSION=$(curl -sI https://github.com/cloudflare/cloudflared/releases/latest | grep -i location | sed 's/.*\/tag\///' | tr -d '\r' | sed 's/^v//')
+    
+    if [ -z "$LATEST_VERSION" ]; then
+        LATEST_VERSION="2024.4.1" # Fallback version
+        echo -e "${YELLOW}⚠️  Failed to fetch latest version, using fallback: $LATEST_VERSION${NC}"
+    else
+        echo -e "${GREEN}✨ Latest version detected: $LATEST_VERSION${NC}"
+    fi
+
+    # 4. Construct Binary Filename based on OS
+    if [ "$OS" = "darwin" ]; then
+        BINARY_FILE="cloudflared-darwin-${ARCH}.tgz"
+    elif [ "$OS" = "linux" ]; then
+        # Linux usually uses raw binary without extension or with specific name
+        BINARY_FILE="cloudflared-linux-${ARCH}"
+    else
+        echo -e "${YELLOW}⚠️  Unsupported OS for auto-acceleration: $OS. Skipping proxy...${NC}"
+    fi
+
+    if [ ! -z "$BINARY_FILE" ]; then
+        # 5. Set the acceleration URL
+        GITHUB_URL="https://github.com/cloudflare/cloudflared/releases/download/${LATEST_VERSION}/${BINARY_FILE}"
+        export CLOUDFLARED_BIN_URL="https://githubproxy.cc/${GITHUB_URL}"
+        
+        echo -e "${GREEN}🚀 Proxy URL set to: $CLOUDFLARED_BIN_URL${NC}"
+    fi
+fi
+
 echo -e "\n${YELLOW}📦 Installing npm dependencies (this may take a minute)...${NC}"
 npm install
 if [ $? -ne 0 ]; then

@@ -102,6 +102,35 @@ if (!(Check-Node)) {
 }
 
 # 2. Install dependencies
+Write-Host "`n📦 Preparing installation environment..." -ForegroundColor Yellow
+
+# Check for China IP to enable acceleration
+Write-Host "🔍 Checking network environment..." -ForegroundColor Cyan
+try {
+    $country = Invoke-RestMethod -Uri "https://ipapi.co/country/" -TimeoutSec 5
+    if ($country -eq "CN") {
+        Write-Host "🌏 Detect you are in China, enabling GitHub proxy acceleration..." -ForegroundColor Yellow
+        
+        # Fetch latest version
+        Write-Host "📡 Fetching latest cloudflared version..." -ForegroundColor Cyan
+        $latestUrl = "https://github.com/cloudflare/cloudflared/releases/latest"
+        $resp = Invoke-WebRequest -Uri $latestUrl -MaximumRedirection 0 -ErrorAction SilentlyContinue
+        $version = $resp.BaseResponse.ResponseUri.ToString().Split('/')[-1].TrimStart('v')
+        
+        # Detect Architecture
+        $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
+        $binaryFile = "cloudflared-windows-$arch.exe"
+        
+        # Set acceleration URL
+        $githubUrl = "https://github.com/cloudflare/cloudflared/releases/download/$version/$binaryFile"
+        $env:CLOUDFLARED_BIN_URL = "https://githubproxy.cc/$githubUrl"
+        
+        Write-Host "🚀 Proxy URL set to: $env:CLOUDFLARED_BIN_URL" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "⚠️  Could not detect region or fetch version, skipping proxy." -ForegroundColor Gray
+}
+
 Write-Host "`n📦 Installing npm dependencies..." -ForegroundColor Yellow
 if ($script:nodeExe -ne "node") {
     # If using portable node, find npm.cmd

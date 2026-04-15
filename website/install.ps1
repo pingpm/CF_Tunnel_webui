@@ -105,49 +105,87 @@ if (!(Check-Node)) {
 Write-Host "`n📦 Preparing installation environment..." -ForegroundColor Yellow
 
 # Check for China IP to enable acceleration
-Write-Host "🔍 Checking network environment..." -ForegroundColor Cyan
-try {
-    $country = Invoke-RestMethod -Uri "https://ipapi.co/country/" -TimeoutSec 5
-    if ($country -eq "CN") {
-        Write-Host "🌏 Detect you are in China, enabling GitHub proxy acceleration..." -ForegroundColor Yellow
-        
-        # Fetch latest version
-        Write-Host "📡 Fetching latest cloudflared version..." -ForegroundColor Cyan
-        $latestUrl = "https://github.com/cloudflare/cloudflared/releases/latest"
-        $resp = Invoke-WebRequest -Uri $latestUrl -MaximumRedirection 0 -ErrorAction SilentlyContinue
-        $version = $resp.BaseResponse.ResponseUri.ToString().Split('/')[-1].TrimStart('v')
-        
-        # Detect Architecture
-        $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
-        $binaryFile = "cloudflared-windows-$arch.exe"
-        
-        # Set acceleration URL
-        $githubUrl = "https://github.com/cloudflare/cloudflared/releases/download/$version/$binaryFile"
-        $env:CLOUDFLARED_BIN_URL = "https://githubproxy.cc/$githubUrl"
-        
-        Write-Host "🚀 Proxy URL set to: $env:CLOUDFLARED_BIN_URL" -ForegroundColor Green
+# Try multiple providers with validation (only accept 2-letter country codes)
+function Get-Country {
+    $providers = @(
+        { (Invoke-RestMethod -Uri "http://ip-api.com/json/?fields=countryCode" -TimeoutSec 5).countryCode },
+        { (Invoke-RestMethod -Uri "https://ifconfig.co/country-iso" -TimeoutSec 5).Trim() },
+        { (Invoke-RestMethod -Uri "https://ipinfo.io/country" -TimeoutSec 5).Trim() }
+    )
+    foreach ($p in $providers) {
+        try {
+            $result = & $p
+            if ($result -match '^[A-Z]{2}$') { return $result }
+        } catch {}
     }
-} catch {
-    Write-Host "⚠️  Could not detect region or fetch version, skipping proxy." -ForegroundColor Gray
+    return ""
+}
+
+Write-Host "🔍 Checking network environment..." -ForegroundColor Cyan
+$country = Get-Country
+
+if ([string]::IsNullOrEmpty($country)) {
+    Write-Host "⚠️  Could not detect network region. Proceeding without acceleration." -ForegroundColor Gray
+} elseif ($country -eq "CN") {
+    Write-Host ""
+    Write-Host "╔══════════════════════════════════════════════════╗" -ForegroundColor Yellow
+    Write-Host "║  🌏 Network Environment: Mainland China (CN)     ║" -ForegroundColor Yellow
+    Write-Host "║  GitHub proxy acceleration has been enabled.     ║" -ForegroundColor Yellow
+    Write-Host "╚══════════════════════════════════════════════════╝" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "🔧 Configuring GitHub proxy acceleration..." -ForegroundColor Yellow
+    
+    # Fetch latest version
+    Write-Host "📡 Fetching latest cloudflared version..." -ForegroundColor Cyan
+    $latestUrl = "https://github.com/cloudflare/cloudflared/releases/latest"
+    $resp = Invoke-WebRequest -Uri $latestUrl -MaximumRedirection 0 -ErrorAction SilentlyContinue
+    $version = $resp.BaseResponse.ResponseUri.ToString().Split('/')[-1].TrimStart('v')
+    
+    # Detect Architecture
+    $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "386" }
+    $binaryFile = "cloudflared-windows-$arch.exe"
+    
+    # Set acceleration URL
+    $githubUrl = "https://github.com/cloudflare/cloudflared/releases/download/$version/$binaryFile"
+    $env:CLOUDFLARED_BIN_URL = "https://githubproxy.cc/$githubUrl"
+    
+    Write-Host "🚀 Proxy URL set to: $env:CLOUDFLARED_BIN_URL" -ForegroundColor Green
+} else {
+    Write-Host ""
+    Write-Host "╔══════════════════════════════════════════════════╗" -ForegroundColor Green
+    Write-Host "║  🌐 Network Environment: International ($country)$((' ' * (14 - $country.Length)))║" -ForegroundColor Green
+    Write-Host "║  Direct connection will be used.                 ║" -ForegroundColor Green
+    Write-Host "╚══════════════════════════════════════════════════╝" -ForegroundColor Green
+    Write-Host ""
 }
 
 Write-Host "`n📦 Installing npm dependencies..." -ForegroundColor Yellow
 if ($script:nodeExe -ne "node") {
     # If using portable node, find npm.cmd
     $npmCmd = "$PWD\npm.cmd"
+    $npmArgs = @("install", "--ignore-scripts")
+    if ($country -eq "CN") {
+        Write-Host "🪞 Using Taobao npm mirror for faster downloads..." -ForegroundColor Cyan
+        $npmArgs += "--registry=https://registry.npmmirror.com"
+    }
     if (Test-Path $npmCmd) {
-        & $npmCmd install
+        & $npmCmd @npmArgs
     } else {
         # Fallback to internal CLI if cmd missing
         $npmCli = "$PWD\node_modules\npm\bin\npm-cli.js"
         if (Test-Path $npmCli) {
-            & $script:nodeExe $npmCli install
+            & $script:nodeExe $npmCli @npmArgs
         } else {
             Write-Host "❌ Could not find npm. Please install manually." -ForegroundColor Red
         }
     }
 } else {
-    npm install
+    if ($country -eq "CN") {
+        Write-Host "🪞 Using Taobao npm mirror for faster downloads..." -ForegroundColor Cyan
+        npm install --registry=https://registry.npmmirror.com --ignore-scripts
+    } else {
+        npm install --ignore-scripts
+    }
 }
 
 if ($LASTEXITCODE -ne 0) {

@@ -169,68 +169,89 @@ app.delete('/api/tunnels/:id', (req, res) => {
 
 // Handle binary installation with Mirror support
 async function installBinary() {
-    if (fs.existsSync(bin)) return;
+    if (fs.existsSync(bin)) {
+        const stats = fs.statSync(bin);
+        if (stats.size > 0) return;
+        console.warn('⚠️  Binary exists but is empty, re-downloading...');
+        fs.unlinkSync(bin);
+    }
 
     console.log('📦 Cloudflare binary not found. Preparing install...');
-    
+
+    // If a mirror URL is provided via env, use it directly (skip slow official source)
+    if (process.env.CLOUDFLARED_BIN_URL) {
+        console.log(`📥 Downloading from mirror: ${process.env.CLOUDFLARED_BIN_URL}`);
+        await downloadBinary(process.env.CLOUDFLARED_BIN_URL, bin);
+        return;
+    }
+
     // Attempt 1: Default installer from npm package
     try {
-        console.log('尝试从官方源下载 (Attempting official download)...');
-        // Set a timeout or catch error
-        await install(bin);
+        console.log('Attempting official download...');
+        const installWithTimeout = Promise.race([
+            install(bin),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
+        ]);
+        await installWithTimeout;
         console.log('✅ Cloudflare binary installed via official source.');
         return;
     } catch (err) {
-        console.warn('⚠️  官方源下载失败或超时，正在尝试加速镜像 (Official download failed, trying mirror)...');
+        console.warn('⚠️  Official download failed or timed out, trying mirror...');
     }
 
     // Attempt 2: Mirror fallback (China friendly)
-    try {
-        const platform = process.platform;
-        const arch = process.arch;
-        let binaryName = '';
+    const platform = process.platform;
+    const arch = process.arch;
+    let binaryName = '';
 
-        if (platform === 'win32') {
-            binaryName = arch === 'x64' ? 'cloudflared-windows-amd64.exe' : 'cloudflared-windows-386.exe';
-        } else if (platform === 'darwin') {
-            binaryName = 'cloudflared-darwin-amd64.tgz'; // package normally handles tgz, but we need the bin
-            // Darwin is usually okay with official, but if we are here, we might need a special handler
-            // For simplicity, let's focus on Linux/Windows mirrors
-        } else if (platform === 'linux') {
-            binaryName = arch === 'x64' ? 'cloudflared-linux-amd64' : (arch === 'arm64' ? 'cloudflared-linux-arm64' : 'cloudflared-linux-386');
-        }
-
-        if (!binaryName || platform === 'darwin') {
-             throw new Error('Unsupported platform for mirror download or Darwin detected');
-        }
-
-        const mirrorUrl = `https://ghproxy.net/https://github.com/cloudflare/cloudflared/releases/latest/download/${binaryName}`;
-        console.log(`📥 从加速镜像下载 (Downloading from mirror): ${mirrorUrl}`);
-        
-        const axios = require('axios');
-        const response = await axios({
-            method: 'get',
-            url: mirrorUrl,
-            responseType: 'stream'
-        });
-
-        const writer = fs.createWriteStream(bin);
-        response.data.pipe(writer);
-
-        await new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
-        });
-
-        if (platform !== 'win32') {
-            fs.chmodSync(bin, '755');
-        }
-        console.log('✅ Cloudflare binary installed via mirror.');
-    } catch (err) {
-        console.error('❌ 所有下载方式均失败 (All download attempts failed):', err.message);
-        console.log('💡 请手动下载云端二进制文件并放入提示的文件夹中。');
-        process.exit(1);
+    if (platform === 'win32') {
+        binaryName = arch === 'x64' ? 'cloudflared-windows-amd64.exe' : 'cloudflared-windows-386.exe';
+    } else if (platform === 'darwin') {
+        binaryName = arch === 'arm64' ? 'cloudflared-darwin-arm64.tgz' : 'cloudflared-darwin-amd64.tgz';
+    } else if (platform === 'linux') {
+        binaryName = arch === 'x64' ? 'cloudflared-linux-amd64' : (arch === 'arm64' ? 'cloudflared-linux-arm64' : 'cloudflared-linux-386');
     }
+
+    if (!binaryName) throw new Error('Unsupported platform');
+
+    const mirrorUrl = `https://ghproxy.net/https://github.com/cloudflare/cloudflared/releases/latest/download/${binaryName}`;
+    console.log(`📥 Downloading from mirror: ${mirrorUrl}`);
+    await downloadBinary(mirrorUrl, bin);
+}
+
+async function downloadBinary(url, dest) {
+    const axios = require('axios');
+    const os = require('os');
+    const tmpFile = dest + '.tmp';
+
+    // Ensure the destination directory exists
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+
+    const response = await axios({ method: 'get', url, responseType: 'stream', timeout: 60000 });
+    const writer = fs.createWriteStream(tmpFile);
+    response.data.pipe(writer);
+    await new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
+    });
+
+    // Handle .tgz (macOS)
+    if (url.endsWith('.tgz')) {
+        const { execSync } = require('child_process');
+        const extractDir = path.join(os.tmpdir(), 'cloudflared-extract');
+        fs.mkdirSync(extractDir, { recursive: true });
+        execSync(`tar -xzf "${tmpFile}" -C "${extractDir}"`);
+        const extracted = fs.readdirSync(extractDir).find(f => f.startsWith('cloudflared'));
+        if (!extracted) throw new Error('cloudflared binary not found in tgz');
+        fs.renameSync(path.join(extractDir, extracted), dest);
+        fs.rmSync(extractDir, { recursive: true, force: true });
+    } else {
+        fs.renameSync(tmpFile, dest);
+    }
+
+    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+    if (process.platform !== 'win32') fs.chmodSync(dest, '755');
+    console.log('✅ Cloudflare binary installed successfully.');
 }
 
 // Start Admin Tunnel and Server

@@ -58,11 +58,48 @@ echo -e "${GREEN}✅ Node.js detected: $(node -v)${NC}"
 echo -e "\n${YELLOW}📦 Preparing installation environment...${NC}"
 
 # Check for China IP to enable acceleration
+# Try multiple providers with validation (only accept 2-letter country codes)
+detect_country() {
+    local result
+
+    # Provider 1: ip-api.com (JSON, no Cloudflare)
+    result=$(curl -s --connect-timeout 5 "http://ip-api.com/json/?fields=countryCode" 2>/dev/null | grep -o '"countryCode":"[A-Z]*"' | grep -o '[A-Z]*"$' | tr -d '"')
+    if echo "$result" | grep -qE '^[A-Z]{2}$'; then echo "$result"; return; fi
+
+    # Provider 2: ifconfig.co
+    result=$(curl -s --connect-timeout 5 "https://ifconfig.co/country-iso" 2>/dev/null | tr -d '[:space:]')
+    if echo "$result" | grep -qE '^[A-Z]{2}$'; then echo "$result"; return; fi
+
+    # Provider 3: ipinfo.io
+    result=$(curl -s --connect-timeout 5 "https://ipinfo.io/country" 2>/dev/null | tr -d '[:space:]')
+    if echo "$result" | grep -qE '^[A-Z]{2}$'; then echo "$result"; return; fi
+
+    echo ""
+}
+
 echo -e "${CYAN}🔍 Checking network environment...${NC}"
-COUNTRY=$(curl -s --connect-timeout 5 https://ipapi.co/country/)
+COUNTRY=$(detect_country)
+
+if [ -z "$COUNTRY" ]; then
+    echo -e "${YELLOW}⚠️  Could not detect network region. Proceeding without acceleration.${NC}"
+elif [ "$COUNTRY" = "CN" ]; then
+    echo -e ""
+    echo -e "${YELLOW}╔══════════════════════════════════════════════════╗${NC}"
+    echo -e "${YELLOW}║  🌏 Network Environment: Mainland China (CN)     ║${NC}"
+    echo -e "${YELLOW}║  GitHub proxy acceleration has been enabled.     ║${NC}"
+    echo -e "${YELLOW}╚══════════════════════════════════════════════════╝${NC}"
+    echo -e ""
+else
+    echo -e ""
+    echo -e "${GREEN}╔══════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  🌐 Network Environment: International ($COUNTRY)$(printf '%*s' $((14 - ${#COUNTRY})) '')║${NC}"
+    echo -e "${GREEN}║  Direct connection will be used.                 ║${NC}"
+    echo -e "${GREEN}╚══════════════════════════════════════════════════╝${NC}"
+    echo -e ""
+fi
 
 if [ "$COUNTRY" = "CN" ]; then
-    echo -e "${YELLOW}🌏 Detect you are in China, enabling GitHub proxy acceleration...${NC}"
+    echo -e "${YELLOW}🔧 Configuring GitHub proxy acceleration...${NC}"
     
     # 1. Detect OS and Architecture
     OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -103,7 +140,12 @@ if [ "$COUNTRY" = "CN" ]; then
 fi
 
 echo -e "\n${YELLOW}📦 Installing npm dependencies (this may take a minute)...${NC}"
-npm install
+if [ "$COUNTRY" = "CN" ]; then
+    echo -e "${CYAN}🪞 Using Taobao npm mirror for faster downloads...${NC}"
+    npm install --registry=https://registry.npmmirror.com --ignore-scripts
+else
+    npm install --ignore-scripts
+fi
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ npm install failed.${NC}"
     read -p "Press Enter to exit..."

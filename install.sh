@@ -114,7 +114,7 @@ if [ "$COUNTRY" = "CN" ]; then
     LATEST_VERSION=$(curl -sI https://github.com/cloudflare/cloudflared/releases/latest | grep -i location | sed 's/.*\/tag\///' | tr -d '\r' | sed 's/^v//')
     
     if [ -z "$LATEST_VERSION" ]; then
-        LATEST_VERSION="2024.4.1" # Fallback version
+        LATEST_VERSION="2026.3.0" # Fallback version
         echo -e "${YELLOW}⚠️  Failed to fetch latest version, using fallback: $LATEST_VERSION${NC}"
     else
         echo -e "${GREEN}✨ Latest version detected: $LATEST_VERSION${NC}"

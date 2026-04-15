@@ -178,28 +178,6 @@ async function installBinary() {
 
     console.log('📦 Cloudflare binary not found. Preparing install...');
 
-    // If a mirror URL is provided via env, use it directly (skip slow official source)
-    if (process.env.CLOUDFLARED_BIN_URL) {
-        console.log(`📥 Downloading from mirror: ${process.env.CLOUDFLARED_BIN_URL}`);
-        await downloadBinary(process.env.CLOUDFLARED_BIN_URL, bin);
-        return;
-    }
-
-    // Attempt 1: Default installer from npm package
-    try {
-        console.log('Attempting official download...');
-        const installWithTimeout = Promise.race([
-            install(bin),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 15000))
-        ]);
-        await installWithTimeout;
-        console.log('✅ Cloudflare binary installed via official source.');
-        return;
-    } catch (err) {
-        console.warn('⚠️  Official download failed or timed out, trying mirror...');
-    }
-
-    // Attempt 2: Mirror fallback (China friendly)
     const platform = process.platform;
     const arch = process.arch;
 
@@ -218,15 +196,37 @@ async function installBinary() {
     };
 
     const key = `${platform}-${arch}`;
-    const mirrorUrl = FALLBACK_URLS[key];
+
+    // If a mirror URL is explicitly provided via env, use it directly
+    const mirrorUrl = process.env.CLOUDFLARED_BIN_URL || FALLBACK_URLS[key];
 
     if (!mirrorUrl) {
-        console.error(`❌ No fallback URL available for platform: ${key}`);
+        console.error(`❌ No download URL available for platform: ${key}`);
         process.exit(1);
     }
 
-    console.log(`📥 Downloading fallback binary (${FALLBACK_VERSION}) from mirror: ${mirrorUrl}`);
-    await downloadBinary(mirrorUrl, bin);
+    // Try mirror first (fast, China-friendly)
+    try {
+        console.log(`📥 Downloading from mirror: ${mirrorUrl}`);
+        await downloadBinary(mirrorUrl, bin);
+        return;
+    } catch (err) {
+        console.warn(`⚠️  Mirror download failed: ${err.message}, falling back to official source...`);
+    }
+
+    // Last resort: official source
+    try {
+        console.log('📥 Attempting official download...');
+        const installWithTimeout = Promise.race([
+            install(bin),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000))
+        ]);
+        await installWithTimeout;
+        console.log('✅ Cloudflare binary installed via official source.');
+    } catch (err) {
+        console.error('❌ All download attempts failed:', err.message);
+        process.exit(1);
+    }
 }
 
 async function downloadBinary(url, dest) {

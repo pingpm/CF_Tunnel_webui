@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 11122;
@@ -127,6 +128,7 @@ app.post('/api/tunnels', async (req, res) => {
     if (existing) {
         return res.status(400).json({ error: `Port ${localPort} is already mapped.` });
     }
+    const id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
     const newMapping = { id, name: name || `Port ${localPort}`, localPort, status: 'starting', createdAt: new Date() };
     db.mappings.push(newMapping);
     saveDb();

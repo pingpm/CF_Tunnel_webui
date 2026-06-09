@@ -16,6 +16,8 @@ echo -e "${CYAN}🚀 Starting CF_Tunnel Installation...${NC}"
 
 # 0. Remote execution handler
 # If package.json is missing, it means we are likely running via curl | bash
+FORCE_REINSTALL=false
+
 if [ ! -f "package.json" ] && [ ! -d "server" ]; then
     echo -e "${YELLOW}📂 Detect remote execution. Preparing environment...${NC}"
     if ! command -v git &> /dev/null; then
@@ -28,7 +30,16 @@ if [ ! -f "package.json" ] && [ ! -d "server" ]; then
     if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/package.json" ]; then
         echo -e "${GREEN}✅ Existing installation found. Updating to latest version...${NC}"
         cd "$INSTALL_DIR"
-        git pull || echo -e "${YELLOW}⚠️  Failed to pull latest changes. Using existing version.${NC}"
+        if PULL_OUTPUT=$(git pull 2>&1); then
+            echo "$PULL_OUTPUT"
+            if [[ "$PULL_OUTPUT" != *"Already up to date"* ]] && [[ "$PULL_OUTPUT" != *"已经是最新的"* ]]; then
+                echo -e "${YELLOW}🔄 Code was updated. Forcing dependency check...${NC}"
+                FORCE_REINSTALL=true
+            fi
+        else
+            echo "$PULL_OUTPUT"
+            echo -e "${YELLOW}⚠️  Failed to pull latest changes. Using existing version.${NC}"
+        fi
     else
         # Remove empty or broken directory if it exists
         if [ -d "$INSTALL_DIR" ]; then
@@ -43,6 +54,7 @@ if [ ! -f "package.json" ] && [ ! -d "server" ]; then
             exit 1
         fi
         cd "$INSTALL_DIR"
+        FORCE_REINSTALL=true
     fi
 fi
 
@@ -55,6 +67,23 @@ if ! command -v node &> /dev/null; then
 fi
 
 echo -e "${GREEN}✅ Node.js detected: $(node -v)${NC}"
+
+# Check if already installed
+ALREADY_INSTALLED=false
+if [ -d "node_modules" ] && { [ -f "node_modules/cloudflared/bin/cloudflared" ] || [ -f "node_modules/cloudflared/bin/cloudflared.exe" ]; }; then
+    ALREADY_INSTALLED=true
+fi
+
+if [ "$ALREADY_INSTALLED" = true ] && [ "$FORCE_REINSTALL" = false ]; then
+    echo -e "${GREEN}✅ Already installed. Starting control panel directly...${NC}"
+    echo "-------------------------------------------------"
+    node server/index.js
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Process exited with an error.${NC}"
+    fi
+    read -p "Installation finished. Press Enter to close this terminal..."
+    exit 0
+fi
 
 # 2. Install dependencies
 echo -e "\n${YELLOW}📦 Preparing installation environment...${NC}"

@@ -7,6 +7,8 @@ $Host.UI.RawUI.WindowTitle = "CF_Tunnel Installer"
 
 Write-Host "`n🚀 Starting CF_Tunnel Installation...`n" -ForegroundColor Cyan
 
+$forceReinstall = $false
+
 # 0. Remote execution handler
 if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
     Write-Host "📥 Project files not found. Preparing to fetch code..." -ForegroundColor Yellow
@@ -19,7 +21,12 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
             Write-Host "✅ Existing installation found. Updating to latest version..." -ForegroundColor Green
             Set-Location -Path $installDir
             try {
-                git pull
+                $pullOutput = git pull 2>&1
+                Write-Host $pullOutput
+                if ($pullOutput -notmatch "Already up to date" -and $pullOutput -notmatch "已经是最新的") {
+                    Write-Host "🔄 Code was updated. Forcing dependency check..." -ForegroundColor Yellow
+                    $forceReinstall = $true
+                }
             } catch {
                 Write-Host "⚠️  Failed to pull latest changes. Using existing version." -ForegroundColor Yellow
             }
@@ -30,7 +37,10 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
             }
             Write-Host "📥 Cloning repository via Git..." -ForegroundColor Cyan
             git clone "$REPO_URL.git" $installDir
-            if (Test-Path $installDir) { Set-Location -Path $installDir }
+            if (Test-Path $installDir) { 
+                Set-Location -Path $installDir 
+                $forceReinstall = $true
+            }
         }
     } else {
         Write-Host "⚠️  Git not detected. Downloading ZIP archive instead..." -ForegroundColor Yellow
@@ -46,6 +56,7 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
             $extractedFolder = Get-ChildItem -Directory | Where-Object { $_.Name -like "*CF_Tunnel_webui-main*" } | Select-Object -First 1
             if ($extractedFolder) {
                 Set-Location -Path $extractedFolder.FullName
+                $forceReinstall = $true
             } else {
                 Write-Host "❌ Could not find the extracted folder." -ForegroundColor Red
                 exit
@@ -96,6 +107,7 @@ if (!(Check-Node)) {
             # Unblock all files to prevent Windows SmartScreen blocks
             Get-ChildItem -Path "$PWD" -Recurse | Unblock-File -ErrorAction SilentlyContinue
             Write-Host "✅ Portable Node.js ready and files unblocked!" -ForegroundColor Green
+            $forceReinstall = $true
         }
         
         Remove-Item $nodeZipFile
@@ -105,6 +117,25 @@ if (!(Check-Node)) {
         Read-Host "Press Enter to exit..."
         exit
     }
+}
+
+# Check if already installed
+$alreadyInstalled = $false
+if (Test-Path "node_modules") {
+    if ((Test-Path "node_modules\cloudflared\bin\cloudflared") -or (Test-Path "node_modules\cloudflared\bin\cloudflared.exe")) {
+        $alreadyInstalled = $true
+    }
+}
+
+if ($alreadyInstalled -and !$forceReinstall) {
+    Write-Host "`n✅ Already installed. Starting control panel directly..." -ForegroundColor Green
+    Write-Host "-------------------------------------------------"
+    & $script:nodeExe server/index.js
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "`n❌ Application stopped with error code $LASTEXITCODE" -ForegroundColor Red
+    }
+    Read-Host "`nPress Enter to close this window..."
+    exit
 }
 
 # 2. Install dependencies

@@ -16,7 +16,13 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
     if (Get-Command git -ErrorAction SilentlyContinue) {
         $installDir = "CF_Tunnel-temp"
         if ((Test-Path "$installDir\package.json")) {
-            Write-Host "✅ Existing installation found. Skipping download..." -ForegroundColor Green
+            Write-Host "✅ Existing installation found. Updating to latest version..." -ForegroundColor Green
+            Set-Location -Path $installDir
+            try {
+                git pull
+            } catch {
+                Write-Host "⚠️  Failed to pull latest changes. Using existing version." -ForegroundColor Yellow
+            }
         } else {
             if (Test-Path $installDir) {
                 Write-Host "⚠️  Directory exists but is incomplete. Removing and re-cloning..." -ForegroundColor Yellow
@@ -24,8 +30,8 @@ if (!(Test-Path "package.json") -and !(Test-Path "server\index.js")) {
             }
             Write-Host "📥 Cloning repository via Git..." -ForegroundColor Cyan
             git clone "$REPO_URL.git" $installDir
+            if (Test-Path $installDir) { Set-Location -Path $installDir }
         }
-        if (Test-Path $installDir) { Set-Location -Path $installDir }
     } else {
         Write-Host "⚠️  Git not detected. Downloading ZIP archive instead..." -ForegroundColor Yellow
         $zipFile = "$env:TEMP\cft_latest.zip"

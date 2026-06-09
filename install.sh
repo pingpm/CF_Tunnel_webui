@@ -26,7 +26,9 @@ if [ ! -f "package.json" ] && [ ! -d "server" ]; then
     INSTALL_DIR="CF_Tunnel-temp"
 
     if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/package.json" ]; then
-        echo -e "${GREEN}✅ Existing installation found. Skipping download...${NC}"
+        echo -e "${GREEN}✅ Existing installation found. Updating to latest version...${NC}"
+        cd "$INSTALL_DIR"
+        git pull || echo -e "${YELLOW}⚠️  Failed to pull latest changes. Using existing version.${NC}"
     else
         # Remove empty or broken directory if it exists
         if [ -d "$INSTALL_DIR" ]; then
@@ -40,8 +42,8 @@ if [ ! -f "package.json" ] && [ ! -d "server" ]; then
             read -p "Press Enter to exit..."
             exit 1
         fi
+        cd "$INSTALL_DIR"
     fi
-    cd "$INSTALL_DIR"
 fi
 
 # 1. Check for Node.js

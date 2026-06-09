@@ -147,7 +147,7 @@ if ([string]::IsNullOrEmpty($country)) {
     
     # Set acceleration URL
     $githubUrl = "https://github.com/cloudflare/cloudflared/releases/download/$version/$binaryFile"
-    $env:CLOUDFLARED_BIN_URL = "https://githubproxy.cc/$githubUrl"
+    $env:CLOUDFLARED_BIN_URL = "https://gh-proxy.com/$githubUrl"
     
     Write-Host "🚀 Proxy URL set to: $env:CLOUDFLARED_BIN_URL" -ForegroundColor Green
 } else {

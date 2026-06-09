@@ -180,46 +180,57 @@ async function installBinary() {
 
     const platform = process.platform;
     const arch = process.arch;
-
-    // Fallback version with known-good mirror URLs (update periodically)
-    const FALLBACK_VERSION = '2026.3.0';
-    const MIRROR_BASE = `https://githubproxy.cc/https://github.com/cloudflare/cloudflared/releases/download/${FALLBACK_VERSION}`;
-
-    const FALLBACK_URLS = {
-        'darwin-arm64':  `${MIRROR_BASE}/cloudflared-darwin-arm64.tgz`,
-        'darwin-x64':    `${MIRROR_BASE}/cloudflared-darwin-amd64.tgz`,
-        'linux-x64':     `${MIRROR_BASE}/cloudflared-linux-amd64`,
-        'linux-arm64':   `${MIRROR_BASE}/cloudflared-linux-arm64`,
-        'linux-arm':     `${MIRROR_BASE}/cloudflared-linux-armhf`,
-        'linux-ia32':    `${MIRROR_BASE}/cloudflared-linux-386`,
-        'win32-x64':     `${MIRROR_BASE}/cloudflared-windows-amd64.exe`,
-    };
-
     const key = `${platform}-${arch}`;
 
-    // If a mirror URL is explicitly provided via env, use it directly
-    const mirrorUrl = process.env.CLOUDFLARED_BIN_URL || FALLBACK_URLS[key];
+    const FILE_NAMES = {
+        'darwin-arm64':  'cloudflared-darwin-arm64.tgz',
+        'darwin-x64':    'cloudflared-darwin-amd64.tgz',
+        'linux-x64':     'cloudflared-linux-amd64',
+        'linux-arm64':   'cloudflared-linux-arm64',
+        'linux-arm':     'cloudflared-linux-armhf',
+        'linux-ia32':    'cloudflared-linux-386',
+        'win32-x64':     'cloudflared-windows-amd64.exe',
+    };
 
-    if (!mirrorUrl) {
-        console.error(`❌ No download URL available for platform: ${key}`);
-        process.exit(1);
+    const FALLBACK_VERSION = '2026.3.0';
+    const fileName = FILE_NAMES[key];
+
+    const urlsToTry = [];
+
+    // 1. If mirror URL is explicitly provided via env, try it first
+    if (process.env.CLOUDFLARED_BIN_URL) {
+        urlsToTry.push(process.env.CLOUDFLARED_BIN_URL);
     }
 
-    // Try mirror first (fast, China-friendly)
-    try {
-        console.log(`📥 Downloading from mirror: ${mirrorUrl}`);
-        await downloadBinary(mirrorUrl, bin);
-        return;
-    } catch (err) {
-        console.warn(`⚠️  Mirror download failed: ${err.message}, falling back to official source...`);
+    // 2. Add dynamic fallback mirrors
+    if (fileName) {
+        const githubUrl = `https://github.com/cloudflare/cloudflared/releases/download/${FALLBACK_VERSION}/${fileName}`;
+        urlsToTry.push(`https://gh-proxy.com/${githubUrl}`);
+        urlsToTry.push(`https://ghproxy.net/${githubUrl}`);
+    } else {
+        console.warn(`⚠️  Unknown binary filename mapping for platform: ${key}. Skipping mirror list.`);
     }
+
+    let installed = false;
+    for (const url of urlsToTry) {
+        try {
+            console.log(`📥 Downloading from mirror: ${url}`);
+            await downloadBinary(url, bin);
+            installed = true;
+            break;
+        } catch (err) {
+            console.warn(`⚠️  Mirror download failed (${url}): ${err.message}`);
+        }
+    }
+
+    if (installed) return;
 
     // Last resort: official source
     try {
         console.log('📥 Attempting official download...');
         const installWithTimeout = Promise.race([
             install(bin),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 60000))
         ]);
         await installWithTimeout;
         console.log('✅ Cloudflare binary installed via official source.');
@@ -237,31 +248,51 @@ async function downloadBinary(url, dest) {
     // Ensure the destination directory exists
     fs.mkdirSync(path.dirname(dest), { recursive: true });
 
-    const response = await axios({ method: 'get', url, responseType: 'stream', timeout: 60000 });
-    const writer = fs.createWriteStream(tmpFile);
-    response.data.pipe(writer);
-    await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
-    });
+    try {
+        const response = await axios({ method: 'get', url, responseType: 'stream', timeout: 60000 });
+        const contentType = response.headers['content-type'] || '';
+        if (contentType.includes('text/html')) {
+            throw new Error('Response is HTML instead of a binary file. The mirror may be down or blocked.');
+        }
 
-    // Handle .tgz (macOS)
-    if (url.endsWith('.tgz')) {
-        const { execSync } = require('child_process');
-        const extractDir = path.join(os.tmpdir(), 'cloudflared-extract');
-        fs.mkdirSync(extractDir, { recursive: true });
-        execSync(`tar -xzf "${tmpFile}" -C "${extractDir}"`);
-        const extracted = fs.readdirSync(extractDir).find(f => f.startsWith('cloudflared'));
-        if (!extracted) throw new Error('cloudflared binary not found in tgz');
-        fs.renameSync(path.join(extractDir, extracted), dest);
-        fs.rmSync(extractDir, { recursive: true, force: true });
-    } else {
-        fs.renameSync(tmpFile, dest);
+        const writer = fs.createWriteStream(tmpFile);
+        response.data.pipe(writer);
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', (err) => {
+                writer.close();
+                reject(err);
+            });
+            response.data.on('error', (err) => {
+                writer.close();
+                reject(err);
+            });
+        });
+
+        // Handle .tgz (macOS)
+        if (url.endsWith('.tgz')) {
+            const { execSync } = require('child_process');
+            const extractDir = path.join(os.tmpdir(), 'cloudflared-extract');
+            fs.mkdirSync(extractDir, { recursive: true });
+            try {
+                execSync(`tar -xzf "${tmpFile}" -C "${extractDir}"`);
+                const extracted = fs.readdirSync(extractDir).find(f => f.startsWith('cloudflared'));
+                if (!extracted) throw new Error('cloudflared binary not found in tgz');
+                fs.renameSync(path.join(extractDir, extracted), dest);
+            } finally {
+                fs.rmSync(extractDir, { recursive: true, force: true });
+            }
+        } else {
+            fs.renameSync(tmpFile, dest);
+        }
+
+        if (process.platform !== 'win32') fs.chmodSync(dest, '755');
+        console.log('✅ Cloudflare binary installed successfully.');
+    } finally {
+        if (fs.existsSync(tmpFile)) {
+            try { fs.unlinkSync(tmpFile); } catch (e) {}
+        }
     }
-
-    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
-    if (process.platform !== 'win32') fs.chmodSync(dest, '755');
-    console.log('✅ Cloudflare binary installed successfully.');
 }
 
 // Start Admin Tunnel and Server

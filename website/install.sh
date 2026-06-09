@@ -133,7 +133,7 @@ if [ "$COUNTRY" = "CN" ]; then
     if [ ! -z "$BINARY_FILE" ]; then
         # 5. Set the acceleration URL
         GITHUB_URL="https://github.com/cloudflare/cloudflared/releases/download/${LATEST_VERSION}/${BINARY_FILE}"
-        export CLOUDFLARED_BIN_URL="https://githubproxy.cc/${GITHUB_URL}"
+        export CLOUDFLARED_BIN_URL="https://gh-proxy.com/${GITHUB_URL}"
         
         echo -e "${GREEN}🚀 Proxy URL set to: $CLOUDFLARED_BIN_URL${NC}"
     fi
